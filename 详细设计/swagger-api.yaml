@@ -1,0 +1,1192 @@
+openapi: 3.0.0
+info:
+  title: 行政区与组织查询 API
+  description: 提供行政区与组织架构的查询接口
+  version: 1.0.0
+servers:
+  - url: /api
+    description: API 服务地址
+
+components:
+  schemas:
+    # 通用响应包装
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 响应码，0 表示成功
+        message:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          description: 响应数据
+        timestamp:
+          type: integer
+          format: int64
+          description: 时间戳
+        traceId:
+          type: string
+          description: 链路追踪 ID
+
+    # 行政区所属组织响应
+    AreaOrgResponse:
+      type: object
+      properties:
+        areaId:
+          type: integer
+          format: int64
+          description: 行政区 ID
+        areaName:
+          type: string
+          description: 行政区名称
+        orgId:
+          type: integer
+          format: int64
+          description: 片区 ID
+        orgName:
+          type: string
+          description: 片区名称
+        officeId:
+          type: integer
+          format: int64
+          description: 办事处 ID
+        officeName:
+          type: string
+          description: 办事处名称
+        regionId:
+          type: integer
+          format: int64
+          description: 大区 ID
+        regionName:
+          type: string
+          description: 大区名称
+
+    # 片区所属上级响应
+    AreaParentResponse:
+      type: object
+      properties:
+        areaId:
+          type: integer
+          format: int64
+          description: 片区 ID
+        areaName:
+          type: string
+          description: 片区名称
+        officeId:
+          type: integer
+          format: int64
+          description: 办事处 ID
+        officeName:
+          type: string
+          description: 办事处名称
+        regionId:
+          type: integer
+          format: int64
+          description: 大区 ID
+        regionName:
+          type: string
+          description: 大区名称
+
+    # 办事处所属大区响应
+    OfficeRegionResponse:
+      type: object
+      properties:
+        officeId:
+          type: integer
+          format: int64
+          description: 办事处 ID
+        officeName:
+          type: string
+          description: 办事处名称
+        regionId:
+          type: integer
+          format: int64
+          description: 大区 ID
+        regionName:
+          type: string
+          description: 大区名称
+
+    # 组织节点
+    OrgNode:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 组织 ID
+        name:
+          type: string
+          description: 组织名称
+        type:
+          type: integer
+          description: 组织类型 1-大区 2-办事处 3-片区
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgNode'
+          description: 子节点
+
+    # 街道所属片区响应
+    TownshipOrgResponse:
+      type: object
+      properties:
+        townshipId:
+          type: integer
+          format: int64
+          description: 街道/乡镇行政区 ID
+        townshipName:
+          type: string
+          description: 街道/乡镇名称
+        regionId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 所属大区 ID
+        regionName:
+          type: string
+          nullable: true
+          description: 大区名称
+        officeId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 所属办事处 ID
+        officeName:
+          type: string
+          nullable: true
+          description: 办事处名称
+        districtId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 所属片区 ID
+        districtName:
+          type: string
+          nullable: true
+          description: 片区名称
+
+    # 省市区县乡镇节点
+    ProvinceNode:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 省份 ID
+        name:
+          type: string
+          description: 省份名称
+        shortName:
+          type: string
+          description: 简称
+        adcode:
+          type: string
+          description: 行政区划代码
+        lng:
+          type: number
+          format: double
+          description: 经度
+        lat:
+          type: number
+          format: double
+          description: 纬度
+
+    CityNode:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 城市 ID
+        name:
+          type: string
+          description: 城市名称
+        shortName:
+          type: string
+          description: 简称
+        adcode:
+          type: string
+          description: 行政区划代码
+        lng:
+          type: number
+          format: double
+          description: 经度
+        lat:
+          type: number
+          format: double
+          description: 纬度
+
+    CountyNode:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 区县 ID
+        name:
+          type: string
+          description: 区县名称
+        shortName:
+          type: string
+          description: 简称
+        level:
+          type: integer
+          description: 类型 1-市辖区 2-县 3-县级市
+        adcode:
+          type: string
+          description: 行政区划代码
+        lng:
+          type: number
+          format: double
+          description: 经度
+        lat:
+          type: number
+          format: double
+          description: 纬度
+
+    TownshipNode:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 乡镇/街道 ID
+        name:
+          type: string
+          description: 名称
+        shortName:
+          type: string
+          description: 简称
+        type:
+          type: string
+          description: 类型 街道/镇/乡
+        adcode:
+          type: string
+          description: 行政区划代码
+        lng:
+          type: number
+          format: double
+          description: 经度
+        lat:
+          type: number
+          format: double
+          description: 纬度
+
+    AreaDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 行政区 ID
+        name:
+          type: string
+          description: 名称
+        fullName:
+          type: string
+          description: 完整路径名称
+        level:
+          type: integer
+          description: 层级
+        provinceId:
+          type: integer
+          format: int64
+          description: 所属省份 ID
+        provinceName:
+          type: string
+          description: 省份名称
+        cityId:
+          type: integer
+          format: int64
+          description: 所属城市 ID
+        cityName:
+          type: string
+          description: 城市名称
+        countyId:
+          type: integer
+          format: int64
+          description: 所属区县 ID
+        countyName:
+          type: string
+          description: 区县名称
+        townshipId:
+          type: integer
+          format: int64
+          description: 所属乡镇/街道 ID
+        townshipName:
+          type: string
+          description: 乡镇/街道名称
+        lng:
+          type: number
+          format: double
+          description: 经度
+        lat:
+          type: number
+          format: double
+          description: 纬度
+
+    AreaTreeNode:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 行政区 ID
+        name:
+          type: string
+          description: 名称
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaTreeNode'
+          description: 子节点列表
+
+    # 简易区划节点（区划代码 / 名称 / 上级区划代码 / 上级区划名称）
+    AreaItem:
+      type: object
+      properties:
+        adcode:
+          type: string
+          description: 当前区划代码
+        name:
+          type: string
+          description: 名称
+        parentAdcode:
+          type: string
+          nullable: true
+          description: 上级区划代码，省级为 null
+        parentName:
+          type: string
+          nullable: true
+          description: 上级区划名称，省级为 null
+
+  parameters:
+    # 通用参数
+    areaIdParam:
+      name: areaId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 行政区 ID
+
+    townshipIdParam:
+      name: townshipId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 街道/乡镇行政区 ID
+
+    provinceIdParam:
+      name: provinceId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 省份 ID
+
+    cityIdParam:
+      name: cityId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 城市 ID
+
+    countyIdParam:
+      name: countyId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 区县 ID
+
+    officeIdParam:
+      name: officeId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 办事处 ID
+
+    regionIdParam:
+      name: regionId
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int64
+      description: 大区 ID，不传返回全部
+
+    statusParam:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: integer
+      description: 状态筛选
+
+    areaTypeParam:
+      name: type
+      in: query
+      required: false
+      schema:
+        type: integer
+        enum: [0, 1, 2, 3]
+      description: 起始层级 0-省 1-市 2-区县 3-乡镇街道
+
+    areaDepthParam:
+      name: depth
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 1
+      description: 向下查询层级深度，默认 1
+
+paths:
+  /geo/org:
+    get:
+      summary: 查询行政区所属组织
+      description: 根据行政区 ID 查询其所属的组织（片区/办事处/大区）
+      operationId: getAreaOrg
+      tags:
+        - 行政区查询
+      parameters:
+        - $ref: '#/components/parameters/areaIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/AreaOrgResponse'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  areaId: 10001
+                  areaName: 南头街道
+                  orgId: 1001
+                  orgName: 南山片区
+                  officeId: 101
+                  officeName: 深圳办事处
+                  regionId: 1
+                  regionName: 华南大区
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+
+  /area/parent:
+    get:
+      summary: 查询片区所属上级
+      description: 查询片区的直接上级（办事处）及所属大区
+      operationId: getAreaParent
+      tags:
+        - 行政区查询
+      parameters:
+        - $ref: '#/components/parameters/areaIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/AreaParentResponse'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  /office/region:
+    get:
+      summary: 查询办事处所属大区
+      description: 查询办事处的所属大区
+      operationId: getOfficeRegion
+      tags:
+        - 办事处查询
+      parameters:
+        - $ref: '#/components/parameters/officeIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/OfficeRegionResponse'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  officeId: 101
+                  officeName: 深圳办事处
+                  regionId: 1
+                  regionName: 华南大区
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  /org/tree:
+    get:
+      summary: 组织树查询
+      description: 获取完整的组织架构树（大区 → 办事处 → 片区）
+      operationId: getOrgTree
+      tags:
+        - 组织架构查询
+      parameters:
+        - $ref: '#/components/parameters/regionIdParam'
+        - $ref: '#/components/parameters/statusParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrgNode'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - id: 1
+                    name: 华南大区
+                    type: 1
+                    children:
+                      - id: 101
+                        name: 深圳办事处
+                        type: 2
+                        children:
+                          - id: 1001
+                            name: 南山片区
+                            type: 3
+                            children: []
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
+
+  /area/provinces:
+    get:
+      summary: 省列表查询
+      description: 获取所有省份列表
+      operationId: getProvinces
+      tags:
+        - 行政区划查询
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProvinceNode'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - id: 100000
+                    name: 广东省
+                    shortName: 广东
+                    adcode: '440000'
+                    lng: 113.280637
+                    lat: 23.125178
+                  - id: 110000
+                    name: 北京市
+                    shortName: 北京
+                    adcode: '110000'
+                    lng: 116.407526
+                    lat: 39.90403
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
+
+  /area/cities:
+    get:
+      summary: 市列表查询
+      description: 根据省份 ID 查询下属所有城市
+      operationId: getCities
+      tags:
+        - 行政区划查询
+      parameters:
+        - $ref: '#/components/parameters/provinceIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CityNode'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - id: 440300
+                    name: 深圳市
+                    shortName: 深圳
+                    adcode: '440300'
+                    lng: 114.057868
+                    lat: 22.543099
+                  - id: 440100
+                    name: 广州市
+                    shortName: 广州
+                    adcode: '440100'
+                    lng: 113.280637
+                    lat: 23.125178
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  /area/counties:
+    get:
+      summary: 区/县列表查询
+      description: 根据城市 ID 查询下属所有区县
+      operationId: getCounties
+      tags:
+        - 行政区划查询
+      parameters:
+        - $ref: '#/components/parameters/cityIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CountyNode'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - id: 440305
+                    name: 南山区
+                    shortName: 南山
+                    level: 1
+                    adcode: '440305'
+                    lng: 113.928433
+                    lat: 22.489046
+                  - id: 440306
+                    name: 宝安区
+                    shortName: 宝安
+                    level: 1
+                    adcode: '440306'
+                    lng: 113.884837
+                    lat: 22.652203
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  /area/townships:
+    get:
+      summary: 乡镇/街道列表查询
+      description: 根据区县 ID 查询下属所有乡镇和街道
+      operationId: getTownships
+      tags:
+        - 行政区划查询
+      parameters:
+        - $ref: '#/components/parameters/countyIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TownshipNode'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - id: 440305001
+                    name: 南头街道
+                    shortName: 南头
+                    type: 街道
+                    adcode: '440305001'
+                    lng: 113.942695
+                    lat: 22.532848
+                  - id: 440305002
+                    name: 南山街道
+                    shortName: 南山
+                    type: 街道
+                    adcode: '440305002'
+                    lng: 113.915856
+                    lat: 22.528993
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  /area/detail:
+    get:
+      summary: 行政区详情查询
+      description: 根据行政区 ID 查询详细信息（含完整上级路径）
+      operationId: getAreaDetail
+      tags:
+        - 行政区划查询
+      parameters:
+        - $ref: '#/components/parameters/areaIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/AreaDetailResponse'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  id: 440305001
+                  name: 南头街道
+                  fullName: 广东省深圳市南山区南头街道
+                  level: 3
+                  provinceId: 100000
+                  provinceName: 广东省
+                  cityId: 440300
+                  cityName: 深圳市
+                  countyId: 440305
+                  countyName: 南山区
+                  townshipId: 440305001
+                  townshipName: 南头街道
+                  lng: 113.942695
+                  lat: 22.532848
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  /area/tree:
+    get:
+      summary: 行政区树查询
+      description: 根据类型获取行政区树（可指定层级深度）
+      operationId: getAreaTree
+      tags:
+        - 行政区划查询
+      parameters:
+        - $ref: '#/components/parameters/areaTypeParam'
+        - $ref: '#/components/parameters/areaIdParam'
+        - $ref: '#/components/parameters/areaDepthParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AreaTreeNode'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - id: 100000
+                    name: 广东省
+                    children:
+                      - id: 440300
+                        name: 深圳市
+                        children:
+                          - id: 440305
+                            name: 南山区
+                            children: []
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
+
+  /geo/org/by-township:
+    get:
+      summary: 根据街道行政区 ID 查询所属片区
+      description: 根据街道（乡镇）行政区 ID 查询其所属片区信息，返回结果包含大区、办事处、片区各自的 ID 和名称
+      operationId: getOrgByTownship
+      tags:
+        - 行政区查询
+      parameters:
+        - $ref: '#/components/parameters/townshipIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/TownshipOrgResponse'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  townshipId: 440305001
+                  townshipName: 南头街道
+                  regionId: 1
+                  regionName: 华南大区
+                  officeId: 101
+                  officeName: 深圳办事处
+                  districtId: 1001
+                  districtName: 南山片区
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '400':
+          description: 参数错误
+        '500':
+          description: 服务器错误
+
+  # ==================== 区划字典列表接口（无参数） ====================
+
+  /area/province-list:
+    get:
+      summary: 获取所有省份列表
+      description: 获取全国所有省份/直辖市/自治区列表，无需传入参数
+      operationId: getProvinceList
+      tags:
+        - 行政区划查询
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AreaItem'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - adcode: '110000'
+                    name: 北京市
+                    parentAdcode: '000000'
+                    parentName: '中国'
+                  - adcode: '440000'
+                    name: 广东省
+                    parentAdcode: '000000'
+                    parentName: '中国'
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
+
+  /area/city-list:
+    get:
+      summary: 获取所有城市列表
+      description: 获取全国所有地级市/直辖市列表，无需传入参数
+      operationId: getCityList
+      tags:
+        - 行政区划查询
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AreaItem'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - adcode: '440300'
+                    name: 深圳市
+                    parentAdcode: '440000'
+                    parentName: '广东省'
+                  - adcode: '440100'
+                    name: 广州市
+                    parentAdcode: '440000'
+                    parentName: '广东省'
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
+
+  /area/county-list:
+    get:
+      summary: 获取所有区县列表
+      description: 获取全国所有市辖区/县/县级市列表，无需传入参数
+      operationId: getCountyList
+      tags:
+        - 行政区划查询
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AreaItem'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - adcode: '440305'
+                    name: 南山区
+                    parentAdcode: '440300'
+                    parentName: '深圳市'
+                  - adcode: '440306'
+                    name: 宝安区
+                    parentAdcode: '440300'
+                    parentName: '深圳市'
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
+
+  /area/township-list:
+    get:
+      summary: 获取所有乡镇/街道列表
+      description: 获取全国所有乡镇和街道列表，无需传入参数
+      operationId: getTownshipList
+      tags:
+        - 行政区划查询
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AreaItem'
+                  timestamp:
+                    type: integer
+                    format: int64
+                  traceId:
+                    type: string
+              example:
+                code: 0
+                message: success
+                data:
+                  - adcode: '440305001'
+                    name: 南头街道
+                    parentAdcode: '440305'
+                    parentName: '南山区'
+                  - adcode: '440305002'
+                    name: 南山街道
+                    parentAdcode: '440305'
+                    parentName: '南山区'
+                timestamp: 1713580800000
+                traceId: a1b2c3d4e5f6
+        '500':
+          description: 服务器错误
