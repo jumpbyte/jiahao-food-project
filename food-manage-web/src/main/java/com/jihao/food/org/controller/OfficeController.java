@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/office")
+@RequestMapping("/api/admin/office")
 @RequiredArgsConstructor
 public class OfficeController {
 

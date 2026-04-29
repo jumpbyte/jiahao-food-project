@@ -5,16 +5,14 @@ import com.jihao.food.area.dto.AreaDetailDTO;
 import com.jihao.food.area.dto.AreaTreeDTO;
 import com.jihao.food.area.service.AreaQueryService;
 import com.jihao.food.common.Result;
-import com.jihao.food.common.annotation.IgnoreAuth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/area")
+@RequestMapping("/api/open/area")
 @RequiredArgsConstructor
-@IgnoreAuth
 public class AreaQueryController {
 
     private final AreaQueryService areaQueryService;

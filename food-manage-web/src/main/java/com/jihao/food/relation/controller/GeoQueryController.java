@@ -3,7 +3,6 @@ package com.jihao.food.relation.controller;
 import com.jihao.food.area.entity.Area;
 import com.jihao.food.area.mapper.AreaMapper;
 import com.jihao.food.common.Result;
-import com.jihao.food.common.annotation.IgnoreAuth;
 import com.jihao.food.org.entity.Organization;
 import com.jihao.food.org.mapper.OrganizationMapper;
 import com.jihao.food.relation.entity.AreaRelation;
@@ -17,9 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/geo")
+@RequestMapping("/api/open/geo")
 @RequiredArgsConstructor
-@IgnoreAuth
 public class GeoQueryController {
 
     private final AreaRelationService areaRelationService;

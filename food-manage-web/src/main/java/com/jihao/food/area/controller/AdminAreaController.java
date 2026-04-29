@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin-area")
+@RequestMapping("/api/admin/area")
 @RequiredArgsConstructor
 public class AdminAreaController {
 

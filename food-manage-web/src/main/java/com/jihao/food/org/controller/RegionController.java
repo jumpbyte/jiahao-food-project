@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/region")
+@RequestMapping("/api/admin/region")
 @RequiredArgsConstructor
 public class RegionController {
 
