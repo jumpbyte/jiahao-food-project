@@ -21,7 +21,7 @@
 | 认证 | `auth/` | 用户登录 + JWT 生成 |
 | 组织架构 | `org/` | 大区/办事处/片区 CRUD + 组织树查询 |
 | 行政区 | `area/` | 行政区 CRUD、导入、查询（省市县街道） |
-| 映射关系 | `relation/` | 片区-街道绑定、行政区归属查询 |
+| 映射关系 | `relation/` | 组织-街道绑定（大区/办事处/片区）、行政区归属查询、可选行政区树 |
 | 系统 | `system/` | SysUser、SysApiKey 实体及 Mapper |
 
 ## API 路由
@@ -30,9 +30,9 @@
 
 | 模块 | 路径前缀 |
 |------|----------|
-| 大区 | `/api/admin/region/*` |
-| 办事处 | `/api/admin/office/*` |
-| 片区 | `/api/admin/district/*` (CRUD) + `bind-streets` + `unbind-street` + `parent` |
+| 大区 | `/api/admin/region/*` (list, create, update, delete, bind-streets, streets, selectable-area-tree) |
+| 办事处 | `/api/admin/office/*` (list, create, update, delete, bind-streets, streets, selectable-area-tree) |
+| 片区 | `/api/admin/district/*` (list, create, update, delete, bind-streets, unbind-street, parent, selectable-area-tree) |
 | 行政区管理 | `/api/admin/area/*` |
 | 街道 | `/api/admin/street/list` |
 | 组织树 | `/api/admin/org/tree` |
