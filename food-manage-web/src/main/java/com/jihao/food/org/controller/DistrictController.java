@@ -54,8 +54,17 @@ public class DistrictController {
 
     @PostMapping("/bind-streets")
     public Result<Integer> bindStreets(@Validated @RequestBody BindStreetsRequest request) {
-        int count = areaRelationService.bindStreets(request.getAreaId(), request.getStreetIds());
+        Organization district = organizationService.getById(request.getAreaId());
+        Long parentOrgId = district != null ? district.getParentId() : null;
+        int count = areaRelationService.bindStreetsWithValidation(request.getAreaId(), request.getStreetIds(), parentOrgId);
         return Result.success(count);
+    }
+
+    @GetMapping("/selectable-area-tree")
+    public Result<List<AreaRelationService.AreaTreeNode>> selectableAreaTree(@RequestParam Long orgId) {
+        Organization district = organizationService.getById(orgId);
+        Long parentOrgId = district != null ? district.getParentId() : null;
+        return Result.success(areaRelationService.getSelectableAreaTree(orgId, parentOrgId));
     }
 
     @PostMapping("/unbind-street")

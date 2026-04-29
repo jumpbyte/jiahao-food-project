@@ -17,6 +17,10 @@ public interface AreaMapper extends BaseMapper<Area> {
     @Select("SELECT * FROM area WHERE level = #{level} AND state = #{state} ORDER BY id ASC")
     List<Area> selectByLevel(@Param("level") Integer level, @Param("state") Integer state);
 
+    default List<Area> selectByLevel(Integer level) {
+        return selectByLevel(level, 1);
+    }
+
     @Select("SELECT COUNT(*) FROM area WHERE pid = #{id} AND state = 1")
     int countChildren(Long id);
 
