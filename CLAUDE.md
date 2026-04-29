@@ -26,14 +26,20 @@
 
 ## API 路由
 
+### 后台管理接口（需 JWT 登录，免签名）
+
 | 模块 | 路径前缀 |
 |------|----------|
-| 认证 | `/api/auth/login` |
-| 大区 | `/api/region/*` |
-| 办事处 | `/api/office/*` |
-| 片区 | `/api/area/*` (CRUD) + `/api/area/bind-streets` + `/api/area/unbind-street` + `/api/area/parent` |
-| 行政区管理 | `/api/admin-area/*` |
-| 行政区查询 | `/api/area/provinces` `/api/area/cities` 等 |
-| 街道 | `/api/street/list` |
-| 归属查询 | `/api/geo/org` `/api/geo/org/by-township` |
-| 组织树 | `/api/org/tree` |
+| 大区 | `/api/admin/region/*` |
+| 办事处 | `/api/admin/office/*` |
+| 片区 | `/api/admin/district/*` (CRUD) + `bind-streets` + `unbind-street` + `parent` |
+| 行政区管理 | `/api/admin/area/*` |
+| 街道 | `/api/admin/street/list` |
+| 组织树 | `/api/admin/org/tree` |
+
+### 对外开放接口（需 MD5 签名，免 JWT）
+
+| 模块 | 路径前缀 |
+|------|----------|
+| 行政区查询 | `/api/open/area/*` (provinces, cities, counties, townships, detail, tree, province-list 等) |
+| 归属查询 | `/api/open/geo/org` `/api/open/geo/org/by-township` |
