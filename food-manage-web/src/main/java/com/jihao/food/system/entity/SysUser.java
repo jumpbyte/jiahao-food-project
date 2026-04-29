@@ -24,6 +24,8 @@ public class SysUser {
 
     private String email;
 
+    private String role;
+
     private Integer state;
 
     private LocalDateTime createTime;

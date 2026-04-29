@@ -6,9 +6,9 @@
 -- ============================================================
 
 -- 创建数据库（如不存在）
-CREATE DATABASE IF NOT EXISTS `food_manage` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS `jiahao_food_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
-USE `food_manage`;
+USE `jiahao_food_db`;
 
 -- ============================================================
 -- 1. 行政区表（area）
@@ -88,6 +88,7 @@ CREATE TABLE `sys_user` (
   `real_name` varchar(50) NOT NULL DEFAULT '' COMMENT '真实姓名',
   `phone` varchar(20) NOT NULL DEFAULT '' COMMENT '手机号',
   `email` varchar(100) NOT NULL DEFAULT '' COMMENT '邮箱',
+  `role` varchar(20) NOT NULL DEFAULT 'operator' COMMENT '角色 admin-管理员 operator-运营人员 viewer-只读人员',
   `state` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态 0-禁用 1-启用',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -120,8 +121,8 @@ CREATE TABLE `sys_api_key` (
 -- ============================================================
 
 -- 默认管理员账号 (密码: admin123, BCrypt 加密)
-INSERT INTO `sys_user` (`username`, `password`, `real_name`, `state`)
-VALUES ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '系统管理员', 1);
+INSERT INTO `sys_user` (`username`, `password`, `real_name`, `role`, `state`)
+VALUES ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '系统管理员', 'admin', 1);
 
 -- 示例 API Key (app_key: demo, app_secret: demo_secret_123)
 INSERT INTO `sys_api_key` (`app_key`, `app_secret`, `app_name`, `state`, `remark`)
