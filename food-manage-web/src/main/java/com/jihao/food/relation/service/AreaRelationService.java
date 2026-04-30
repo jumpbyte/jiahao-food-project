@@ -94,12 +94,13 @@ public class AreaRelationService {
             // 办事处/片区：只展示父组织（大区/办事处）已绑定的街道
             targetStreetIds = new HashSet<>(areaRelationMapper.selectAreaIdsByParentOrg(parentOrgId));
         } else {
-            // 大区：没有已绑定街道时返回完整树，有已绑定时只返回已绑定的
-            if (boundStreetIds.isEmpty()) {
-                // 返回完整行政区树，供用户选择新街道
+            // 大区：返回已绑定的街道 + 未绑定任何大区的空闲街道
+            List<Long> unboundStreets = areaRelationMapper.selectUnboundStreetsByOrgType(Organization.TYPE_REGION);
+            targetStreetIds = new HashSet<>(boundStreetIds);
+            targetStreetIds.addAll(unboundStreets);
+            if (targetStreetIds.isEmpty()) {
                 isFullTree = true;
             }
-            targetStreetIds = new HashSet<>(boundStreetIds);
         }
 
         if (targetStreetIds.isEmpty() && !isFullTree) {
