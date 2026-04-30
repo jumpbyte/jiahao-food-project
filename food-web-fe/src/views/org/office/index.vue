@@ -104,7 +104,8 @@
             :default-checked-keys="selectedTreeKeys"
             :props="{ label: 'name', children: 'children' }"
             node-key="id"
-            :check-strictly="true"
+            :check-strictly="false"
+            :check-on-click-node="false"
             style="max-height: 350px; overflow-y: auto;"
           >
             <template #default="{ node, data }">
@@ -251,6 +252,7 @@ function handleBindStreets(row) {
 }
 
 function buildSelectedTree(data) {
+  // 构建完整的层级树（省>市>县>已选街道）
   const build = (nodes) => {
     if (!Array.isArray(nodes)) return []
     return nodes

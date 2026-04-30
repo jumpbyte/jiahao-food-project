@@ -104,7 +104,8 @@
             :default-checked-keys="selectedTreeKeys"
             :props="{ label: 'name', children: 'children' }"
             node-key="id"
-            :check-strictly="true"
+            :check-strictly="false"
+            :check-on-click-node="false"
             style="max-height: 350px; overflow-y: auto;"
           >
             <template #default="{ node, data }">
@@ -253,6 +254,7 @@ function handleBindStreets(row) {
 }
 
 function buildSelectedTree(data) {
+  // 构建完整的层级树（省>市>县>已选街道）
   const build = (nodes) => {
     if (!Array.isArray(nodes)) return []
     return nodes
@@ -271,7 +273,7 @@ function buildSelectedTree(data) {
       .filter(Boolean)
   }
   selectedTreeData.value = build(data)
-  // 收集右侧所有街道ID
+  // 收集所有街道ID（叶子节点）
   const collectIds = (nodes) => {
     const ids = []
     if (!Array.isArray(nodes)) return ids
@@ -282,6 +284,7 @@ function buildSelectedTree(data) {
     return ids
   }
   selectedTreeKeys.value = collectIds(selectedTreeData.value)
+  // 右侧树也需要用 nextTick 设置 default-checked-keys，因为树是动态渲染的
 }
 
 function filterNode(value, data) {
