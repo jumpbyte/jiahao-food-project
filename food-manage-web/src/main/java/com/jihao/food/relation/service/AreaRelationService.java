@@ -89,33 +89,58 @@ public class AreaRelationService {
 
         // 2. 确定要展示的街道集合
         Set<Long> targetStreetIds;
+        boolean isFullTree = false;
         if (parentOrgId != null && parentOrgId != 0) {
             // 办事处/片区：只展示父组织（大区/办事处）已绑定的街道
             targetStreetIds = new HashSet<>(areaRelationMapper.selectAreaIdsByParentOrg(parentOrgId));
         } else {
-            // 大区：只返回已绑定的街道（创建时通过级联选择器添加新街道）
+            // 大区：没有已绑定街道时返回完整树，有已绑定时只返回已绑定的
             if (boundStreetIds.isEmpty()) {
-                return Collections.emptyList();
+                // 返回完整行政区树，供用户选择新街道
+                isFullTree = true;
             }
             targetStreetIds = new HashSet<>(boundStreetIds);
         }
 
-        if (targetStreetIds.isEmpty()) {
+        if (targetStreetIds.isEmpty() && !isFullTree) {
             return Collections.emptyList();
         }
 
-        // 3. 按需加载层级路径：街道 -> 县 -> 市 -> 省
-        List<Area> townships = areaMapper.selectByIdsAndLevel(new ArrayList<>(targetStreetIds), Area.LEVEL_TOWNSHIP);
-        List<Long> countyIds = townships.stream().map(Area::getPid).distinct().toList();
-        if (countyIds.isEmpty()) return Collections.emptyList();
+        // 3. 加载数据
+        List<Area> townships;
+        List<Long> countyIds;
+        List<Area> counties;
+        List<Long> cityIds;
+        List<Area> cities;
+        List<Long> provinceIds;
+        List<Area> provinces;
 
-        List<Area> counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
-        List<Long> cityIds = counties.stream().map(Area::getPid).distinct().toList();
+        if (isFullTree) {
+            // 完整树：加载全部层级
+            counties = areaMapper.selectByLevel(Area.LEVEL_COUNTY);
+            cities = areaMapper.selectByLevel(Area.LEVEL_CITY);
+            provinces = areaMapper.selectByLevel(Area.LEVEL_PROVINCE);
+            // 加载所有街道
+            countyIds = counties.stream().map(Area::getId).distinct().toList();
+            townships = areaMapper.selectByPidsAndLevel(countyIds, Area.LEVEL_TOWNSHIP);
+            // 所有街道都可选择
+            targetStreetIds = townships.stream().map(Area::getId).collect(Collectors.toSet());
+            cityIds = cities.stream().map(Area::getId).distinct().toList();
+            provinceIds = provinces.stream().map(Area::getId).distinct().toList();
+        } else {
+            // 按需加载：只加载涉及的层级路径
+            townships = areaMapper.selectByIdsAndLevel(new ArrayList<>(targetStreetIds), Area.LEVEL_TOWNSHIP);
+            countyIds = townships.stream().map(Area::getPid).distinct().toList();
+            if (countyIds.isEmpty()) return Collections.emptyList();
 
-        List<Area> cities = areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
-        List<Long> provinceIds = cities.stream().map(Area::getPid).distinct().toList();
+            counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
+            cityIds = counties.stream().map(Area::getPid).distinct().toList();
 
-        List<Area> provinces = areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+            cities = areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
+            provinceIds = cities.stream().map(Area::getPid).distinct().toList();
+
+            provinces = areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+        }
 
         Map<Long, List<Area>> townshipByCounty = townships.stream()
                 .collect(Collectors.groupingBy(Area::getPid));
