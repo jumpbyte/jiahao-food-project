@@ -26,4 +26,21 @@ public interface AreaMapper extends BaseMapper<Area> {
 
     @Select("SELECT * FROM area WHERE adcode = #{adcode}")
     Area selectByAdcode(String adcode);
+
+    @Select("<script>" +
+            "SELECT * FROM area WHERE level = #{level} AND state = 1 AND id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    List<Area> selectByIdsAndLevel(@Param("ids") List<Long> ids, @Param("level") Integer level);
+
+    @Select("<script>" +
+            "SELECT * FROM area WHERE pid IN " +
+            "<foreach collection='pids' item='pid' open='(' separator=',' close=')'>" +
+            "#{pid}" +
+            "</foreach>" +
+            " AND level = #{level} AND state = 1 ORDER BY id ASC" +
+            "</script>")
+    List<Area> selectByPidsAndLevel(@Param("pids") List<Long> pids, @Param("level") Integer level);
 }

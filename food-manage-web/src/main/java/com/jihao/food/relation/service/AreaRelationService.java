@@ -84,30 +84,52 @@ public class AreaRelationService {
     }
 
     public List<AreaTreeNode> getSelectableAreaTree(Long orgId, Long parentOrgId) {
-        Set<Long> selectableAreaIds = new HashSet<>(listAreaIdsByOrgId(orgId));
-        Set<Long> availableAreaIds;
+        // 1. 查出该组织已绑定的街道ID
+        Set<Long> boundStreetIds = new HashSet<>(listAreaIdsByOrgId(orgId));
+
+        // 2. 确定要展示的街道集合
+        Set<Long> targetStreetIds;
         if (parentOrgId != null && parentOrgId != 0) {
-            availableAreaIds = new HashSet<>(areaRelationMapper.selectAreaIdsByParentOrg(parentOrgId));
+            // 办事处/片区：只展示父组织（大区/办事处）已绑定的街道
+            targetStreetIds = new HashSet<>(areaRelationMapper.selectAreaIdsByParentOrg(parentOrgId));
         } else {
-            availableAreaIds = null;
+            // 大区：只返回已绑定的街道（创建时通过级联选择器添加新街道）
+            if (boundStreetIds.isEmpty()) {
+                return Collections.emptyList();
+            }
+            targetStreetIds = new HashSet<>(boundStreetIds);
         }
-        List<Area> townships = areaMapper.selectByLevel(Area.LEVEL_TOWNSHIP);
+
+        if (targetStreetIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 3. 按需加载层级路径：街道 -> 县 -> 市 -> 省
+        List<Area> townships = areaMapper.selectByIdsAndLevel(new ArrayList<>(targetStreetIds), Area.LEVEL_TOWNSHIP);
+        List<Long> countyIds = townships.stream().map(Area::getPid).distinct().toList();
+        if (countyIds.isEmpty()) return Collections.emptyList();
+
+        List<Area> counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
+        List<Long> cityIds = counties.stream().map(Area::getPid).distinct().toList();
+
+        List<Area> cities = areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
+        List<Long> provinceIds = cities.stream().map(Area::getPid).distinct().toList();
+
+        List<Area> provinces = areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+
         Map<Long, List<Area>> townshipByCounty = townships.stream()
                 .collect(Collectors.groupingBy(Area::getPid));
-        List<Area> counties = areaMapper.selectByLevel(Area.LEVEL_COUNTY);
         Map<Long, List<Area>> countyByCity = counties.stream()
                 .collect(Collectors.groupingBy(Area::getPid));
-        List<Area> cities = areaMapper.selectByLevel(Area.LEVEL_CITY);
         Map<Long, List<Area>> cityByProvince = cities.stream()
                 .collect(Collectors.groupingBy(Area::getPid));
-        List<Area> provinces = areaMapper.selectByLevel(Area.LEVEL_PROVINCE);
 
         List<AreaTreeNode> result = new ArrayList<>();
         for (Area province : provinces) {
-            AreaTreeNode provinceNode = buildProvinceNode(province, cityByProvince,
-                    countyByCity, townshipByCounty, selectableAreaIds, availableAreaIds);
-            if (provinceNode != null) {
-                result.add(provinceNode);
+            AreaTreeNode node = buildProvinceNode(province, cityByProvince,
+                    countyByCity, townshipByCounty, boundStreetIds, targetStreetIds);
+            if (node != null) {
+                result.add(node);
             }
         }
         return result;
@@ -117,13 +139,13 @@ public class AreaRelationService {
                                            Map<Long, List<Area>> cityByProvince,
                                            Map<Long, List<Area>> countyByCity,
                                            Map<Long, List<Area>> townshipByCounty,
-                                           Set<Long> selectableAreaIds,
-                                           Set<Long> availableAreaIds) {
+                                           Set<Long> boundStreetIds,
+                                           Set<Long> targetStreetIds) {
         List<Area> cities = cityByProvince.getOrDefault(province.getId(), Collections.emptyList());
         List<AreaTreeNode> cityNodes = new ArrayList<>();
         for (Area city : cities) {
             AreaTreeNode cityNode = buildCityNode(city, countyByCity, townshipByCounty,
-                    selectableAreaIds, availableAreaIds);
+                    boundStreetIds, targetStreetIds);
             if (cityNode != null) {
                 cityNodes.add(cityNode);
             }
@@ -142,13 +164,13 @@ public class AreaRelationService {
     private AreaTreeNode buildCityNode(Area city,
                                        Map<Long, List<Area>> countyByCity,
                                        Map<Long, List<Area>> townshipByCounty,
-                                       Set<Long> selectableAreaIds,
-                                       Set<Long> availableAreaIds) {
+                                       Set<Long> boundStreetIds,
+                                       Set<Long> targetStreetIds) {
         List<Area> counties = countyByCity.getOrDefault(city.getId(), Collections.emptyList());
         List<AreaTreeNode> countyNodes = new ArrayList<>();
         for (Area county : counties) {
             AreaTreeNode countyNode = buildCountyNode(county, townshipByCounty,
-                    selectableAreaIds, availableAreaIds);
+                    boundStreetIds, targetStreetIds);
             if (countyNode != null) {
                 countyNodes.add(countyNode);
             }
@@ -166,21 +188,19 @@ public class AreaRelationService {
 
     private AreaTreeNode buildCountyNode(Area county,
                                          Map<Long, List<Area>> townshipByCounty,
-                                         Set<Long> selectableAreaIds,
-                                         Set<Long> availableAreaIds) {
+                                         Set<Long> boundStreetIds,
+                                         Set<Long> targetStreetIds) {
         List<Area> townships = townshipByCounty.getOrDefault(county.getId(), Collections.emptyList());
         List<AreaTreeNode> townshipNodes = new ArrayList<>();
         for (Area township : townships) {
-            boolean selectable = selectableAreaIds.contains(township.getId());
-            if (availableAreaIds != null) {
-                selectable = selectable && availableAreaIds.contains(township.getId());
-            }
+            boolean inTarget = targetStreetIds.contains(township.getId());
+            boolean isBound = boundStreetIds.contains(township.getId());
             AreaTreeNode node = new AreaTreeNode();
             node.setId(township.getId());
             node.setName(township.getName());
             node.setLevel(township.getLevel());
-            node.setSelectable(selectable);
-            node.setSelected(selectableAreaIds.contains(township.getId()));
+            node.setSelectable(inTarget);
+            node.setSelected(isBound);
             townshipNodes.add(node);
         }
         if (townshipNodes.isEmpty()) return null;
