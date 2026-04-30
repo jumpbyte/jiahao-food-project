@@ -22,7 +22,7 @@
 | 组织架构 | `org/` | 大区/办事处/片区 CRUD + 组织树查询 |
 | 行政区 | `area/` | 行政区 CRUD、导入、查询（省市县街道） |
 | 映射关系 | `relation/` | 组织-街道绑定（大区/办事处/片区）、行政区归属查询、可选行政区树 |
-| 系统 | `system/` | SysUser、SysApiKey 实体及 Mapper |
+| 系统 | `system/` | SysUser、SysApiKey 实体、Mapper、Service、Controller（用户管理 + API Key 管理） |
 
 ## API 路由
 
@@ -36,6 +36,8 @@
 | 行政区管理 | `/api/admin/area/*` |
 | 街道 | `/api/admin/street/list` |
 | 组织树 | `/api/admin/org/tree` |
+| 用户管理 | `/api/admin/user/*` (list, create, update, status, reset-password, change-password) |
+| API Key | `/api/admin/api-key/*` (list, create, update, status, regenerate-secret) |
 
 ### 对外开放接口（需 MD5 签名，免 JWT）
 
