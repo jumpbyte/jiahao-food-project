@@ -89,13 +89,12 @@ const loginForm = ref({
 const loginRules = {
   username: [{ required: true, trigger: "blur", message: "请输入您的账号" }],
   password: [{ required: true, trigger: "blur", message: "请输入您的密码" }],
-  code: [{ required: true, trigger: "change", message: "请输入验证码" }]
 }
 
 const codeUrl = ref("")
 const loading = ref(false)
 // 验证码开关
-const captchaEnabled = ref(true)
+const captchaEnabled = ref(false)
 // 注册开关
 const register = ref(false)
 const redirect = ref(undefined)
@@ -161,7 +160,6 @@ function getCookie() {
   }
 }
 
-getCode()
 getCookie()
 </script>
 

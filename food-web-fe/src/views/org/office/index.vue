@@ -218,9 +218,7 @@ function handleBindStreets(row) {
       if (!Array.isArray(nodes)) return []
       return nodes.map(node => {
         const cloned = { ...node }
-        if (node.level !== 4) {
-          cloned.disabled = true
-        }
+        // 不禁用父节点，保留 el-tree 的级联勾选能力
         if (node.children) {
           cloned.children = cloneTree(node.children)
         }

@@ -161,7 +161,7 @@
 </template>
 
 <script setup name="Notice">
-import NoticeDetailView from "@/layout/components/HeaderNotice/DetailView"
+import NoticeDetailView from "./DetailView"
 import ReadUsersDialog from "./ReadUsers"
 import { listNotice, getNotice, delNotice, addNotice, updateNotice } from "@/api/system/notice"
 

@@ -1,15 +1,14 @@
 import request from '@/utils/request'
 
 // 登录方法
-export function login(username, password, code, uuid) {
+export function login(username, password) {
   const data = {
     username,
-    password,
-    code,
-    uuid
+    password
   }
+  // 后端接口路径为 /api/auth/login
   return request({
-    url: '/api/auth/login/login',
+    url: '/api/auth/login',
     headers: {
       isToken: false,
       repeatSubmit: false
@@ -34,7 +33,7 @@ export function register(data) {
 // 获取用户详细信息
 export function getInfo() {
   return request({
-    url: '/getInfo',
+    url: '/api/auth/getInfo',
     method: 'get'
   })
 }
@@ -50,10 +49,8 @@ export function unlockScreen(password) {
 
 // 退出方法
 export function logout() {
-  return request({
-    url: '/logout',
-    method: 'post'
-  })
+  // 后端暂无 logout 接口，前端直接清除 token
+  return Promise.resolve({ code: 200, msg: '退出成功' })
 }
 
 // 获取验证码

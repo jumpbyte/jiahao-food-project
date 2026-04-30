@@ -24,14 +24,19 @@ const useUserStore = defineStore(
       login(userInfo) {
         const username = userInfo.username.trim()
         const password = userInfo.password
-        const code = userInfo.code
-        const uuid = userInfo.uuid
         return new Promise((resolve, reject) => {
-          login(username, password, code, uuid).then(res => {
-            setToken(res.token)
-            this.token = res.token
-            useLockStore().unlockScreen()
-            resolve()
+          login(username, password).then(res => {
+            // 后端返回格式：{ code: 0, data: { token: '...' }, message: 'success' }
+            // 经过 request.js 适配后 code:0 -> code:200，res 就是 res.data
+            const token = res.data?.token || res.token
+            if (token) {
+              setToken(token)
+              this.token = token
+              useLockStore().unlockScreen()
+              resolve()
+            } else {
+              reject(new Error('登录失败，未获取到token'))
+            }
           }).catch(error => {
             reject(error)
           })
@@ -41,35 +46,24 @@ const useUserStore = defineStore(
       getInfo() {
         return new Promise((resolve, reject) => {
           getInfo().then(res => {
-            const user = res.user
-            let avatar = user.avatar || ""
+            const responseData = res.data || res;
+            const user = responseData.user;
+            let avatar = user?.avatar || "";
             if (!isHttp(avatar)) {
               avatar = (isEmpty(avatar)) ? defAva : import.meta.env.VITE_APP_BASE_API + avatar
             }
-            if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
-              this.roles = res.roles
-              this.permissions = res.permissions
+            if (responseData.roles && responseData.roles.length > 0) {
+              this.roles = responseData.roles
+              this.permissions = responseData.permissions || []
             } else {
               this.roles = ['ROLE_DEFAULT']
             }
-            this.id = user.userId
-            this.name = user.userName
-            this.nickName = user.nickName
+            this.id = user?.userId
+            this.name = user?.userName
+            this.nickName = user?.nickName
             this.avatar = avatar
-            cache.session.set('pwrChrtype', res.pwdChrtype)
-            /* 初始密码提示 */
-            if(res.isDefaultModifyPwd) {
-              ElMessageBox.confirm('您的密码还是初始密码，请修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
-                router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
-              }).catch(() => {})
-            }
-            /* 过期密码提示 */
-            if(!res.isDefaultModifyPwd && res.isPasswordExpired) {
-              ElMessageBox.confirm('您的密码已过期，请尽快修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
-                router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
-              }).catch(() => {})
-            }
-            resolve(res)
+            cache.session.set('pwrChrtype', responseData.pwdChrtype ?? 0)
+            resolve(responseData)
           }).catch(error => {
             reject(error)
           })

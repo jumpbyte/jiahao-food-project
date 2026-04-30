@@ -36,7 +36,9 @@
     "vuedraggable": "4.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@vitejs/plugin-vue": "5.2.4",
+    "playwright": "^1.59.1",
     "sass-embedded": "1.97.2",
     "unplugin-auto-import": "0.18.6",
     "unplugin-vue-setup-extend-plus": "1.0.1",

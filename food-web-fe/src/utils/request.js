@@ -74,6 +74,10 @@ service.interceptors.request.use(config => {
 
 // 响应拦截器
 service.interceptors.response.use(res => {
+    // 适配后端响应格式：后端返回 code: 0 表示成功，RuoYi 期望 code: 200
+    if (res.data.code === 0) {
+      res.data.code = 200;
+    }
     // 未设置状态码则默认成功状态
     const code = res.data.code || 200
     // 获取错误信息
