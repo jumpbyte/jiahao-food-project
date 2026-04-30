@@ -214,12 +214,15 @@ function handleBindStreets(row) {
       streetLoaded.value = true
       return
     }
-    // 克隆树数据，保留正常可勾选状态
+    // 克隆树数据，根据 selectable 字段禁用不可选节点
     const cloneTree = (nodes) => {
       if (!Array.isArray(nodes)) return []
       return nodes.map(node => {
         const cloned = { ...node }
-        // 不禁用父节点，保留 el-tree 的级联勾选能力
+        // 街道节点不可选时，设为 disabled（不可勾选但仍可显示）
+        if (node.level === 4 && !node.selectable) {
+          cloned.disabled = true
+        }
         if (node.children) {
           cloned.children = cloneTree(node.children)
         }
