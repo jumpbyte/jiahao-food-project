@@ -71,6 +71,12 @@ public class OfficeController {
         return Result.success(areaRelationService.listByDistrictId(orgId));
     }
 
+    @PostMapping("/unbind-street")
+    public Result<Void> unbindStreet(@RequestParam Long orgId, @RequestParam Long streetId) {
+        areaRelationService.unbindStreet(orgId, streetId);
+        return Result.success(null);
+    }
+
     @GetMapping("/selectable-area-tree")
     public Result<List<AreaRelationService.AreaTreeNode>> selectableAreaTree(@RequestParam Long orgId) {
         Organization office = organizationService.getById(orgId);

@@ -36,9 +36,9 @@ public interface AreaRelationMapper extends BaseMapper<AreaRelation> {
             "AND child.del_flag = 0 AND ar.del_flag = 0")
     List<Long> selectAreaIdsByParentOrg(Long parentOrgId);
 
-    @Select("SELECT a.id FROM area a WHERE a.level = 4 AND a.state = 1 AND a.id NOT IN " +
-            "(SELECT DISTINCT ar.area_id FROM area_relation ar " +
+    @Select("SELECT a.id FROM area a WHERE a.level = 4 AND a.state = 1 AND NOT EXISTS " +
+            "(SELECT 1 FROM area_relation ar " +
             "JOIN organization o ON ar.org_id = o.id " +
-            "WHERE o.type = #{orgType} AND ar.del_flag = 0 AND o.del_flag = 0)")
+            "WHERE ar.area_id = a.id AND o.type = #{orgType} AND ar.del_flag = 0 AND o.state = 1)")
     List<Long> selectUnboundStreetsByOrgType(@Param("orgType") Integer orgType);
 }

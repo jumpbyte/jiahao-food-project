@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.jihao</groupId>
-    <artifactId>food-project</artifactId>
+    <artifactId>food-manage-web</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>food-project</name>
     <description>区域管理后台</description>

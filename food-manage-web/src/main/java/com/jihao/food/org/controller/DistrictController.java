@@ -38,7 +38,11 @@ public class DistrictController {
         org.setName(request.getName());
         org.setType(Organization.TYPE_DISTRICT);
         org.setParentId(request.getOfficeId());
-        return Result.success(organizationService.create(org));
+        Organization created = organizationService.create(org);
+        if (request.getStreetIds() != null && !request.getStreetIds().isEmpty()) {
+            areaRelationService.bindStreetsWithValidation(created.getId(), request.getStreetIds(), request.getOfficeId());
+        }
+        return Result.success(created);
     }
 
     @PostMapping("/update")
@@ -68,8 +72,8 @@ public class DistrictController {
     }
 
     @PostMapping("/unbind-street")
-    public Result<Void> unbindStreet(@Validated @RequestBody UnbindStreetRequest request) {
-        areaRelationService.unbindStreet(request.getAreaId(), request.getStreetId());
+    public Result<Void> unbindStreet(@RequestParam Long areaId, @RequestParam Long streetId) {
+        areaRelationService.unbindStreet(areaId, streetId);
         return Result.success(null);
     }
 
@@ -103,6 +107,7 @@ public class DistrictController {
         @NotNull(message = "所属办事处不能为空")
         private Long officeId;
         private String remark;
+        private List<Long> streetIds;
     }
 
     @Data
@@ -120,14 +125,6 @@ public class DistrictController {
         private Long areaId;
         @NotEmpty(message = "街道 ID 列表不能为空")
         private List<Long> streetIds;
-    }
-
-    @Data
-    static class UnbindStreetRequest {
-        @NotNull(message = "片区 ID 不能为空")
-        private Long areaId;
-        @NotNull(message = "街道 ID 不能为空")
-        private Long streetId;
     }
 
     @Data

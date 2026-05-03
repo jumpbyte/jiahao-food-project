@@ -57,6 +57,12 @@ public class RegionController {
         return Result.success(null);
     }
 
+    @PostMapping("/unbind-street")
+    public Result<Void> unbindStreet(@RequestParam Long orgId, @RequestParam Long streetId) {
+        areaRelationService.unbindStreet(orgId, streetId);
+        return Result.success(null);
+    }
+
     @PostMapping("/bind-streets")
     public Result<Integer> bindStreets(@Validated @RequestBody BindStreetsRequest request) {
         int count = areaRelationService.bindStreets(request.getOrgId(), request.getStreetIds());
