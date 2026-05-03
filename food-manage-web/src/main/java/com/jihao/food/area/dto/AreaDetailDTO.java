@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -15,9 +16,15 @@ public class AreaDetailDTO {
 
     private String name;
 
+    private String shortName;
+
     private String fullName;
 
+    private String adcode;
+
     private Integer level;
+
+    private Integer state;
 
     private Long provinceId;
 
@@ -38,4 +45,10 @@ public class AreaDetailDTO {
     private BigDecimal lng;
 
     private BigDecimal lat;
+
+    private String path;
+
+    private LocalDateTime createTime;
+
+    private LocalDateTime updateTime;
 }

@@ -37,10 +37,16 @@ public class AreaQueryService {
         AreaDetailDTO dto = new AreaDetailDTO();
         dto.setId(area.getId());
         dto.setName(area.getName());
+        dto.setShortName(area.getShortName());
         dto.setFullName(area.getFullName());
+        dto.setAdcode(area.getAdcode());
         dto.setLevel(area.getLevel());
+        dto.setState(area.getState());
         dto.setLng(area.getLng());
         dto.setLat(area.getLat());
+        dto.setPath(area.getPath());
+        dto.setCreateTime(area.getCreateTime());
+        dto.setUpdateTime(area.getUpdateTime());
 
         buildPathInfo(dto, area);
         return dto;

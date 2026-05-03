@@ -102,7 +102,7 @@
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ viewData.createTime }}</el-descriptions-item>
         <el-descriptions-item label="更新时间">{{ viewData.updateTime }}</el-descriptions-item>
-        <el-descriptions-item label="路径" :span="2">{{ viewData.path }}</el-descriptions-item>
+        <el-descriptions-item label="路径" :span="2">{{ viewData.provinceName || '' }}{{ viewData.cityName ? '/' + viewData.cityName : '' }}{{ viewData.countyName ? '/' + viewData.countyName : '' }}{{ viewData.townshipName ? '/' + viewData.townshipName : '' }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button @click="openView = false">关闭</el-button>
