@@ -362,11 +362,15 @@ function handleDelete(row) {
 
 // 启用/禁用
 function handleToggleStatus(row) {
-  const newState = row.state
-  toggleStatus(row.id, newState).then(() => {
-    proxy.$modal.msgSuccess(newState === 1 ? '已启用' : '已禁用')
+  const actionText = row.state === 1 ? '启用' : '禁用'
+  proxy.$modal.confirm('确认' + actionText + '行政区 "' + row.name + '" 吗？').then(() => {
+    toggleStatus(row.id, row.state).then(() => {
+      proxy.$modal.msgSuccess(actionText + '成功')
+    }).catch(() => {
+      row.state = row.state === 1 ? 0 : 1
+    })
   }).catch(() => {
-    row.state = newState === 1 ? 0 : 1
+    row.state = row.state === 1 ? 0 : 1
   })
 }
 
