@@ -9,6 +9,15 @@ export function getAreaTree(query) {
   })
 }
 
+// 查询子级行政区列表
+export function getAreaChildren(parentId) {
+  return request({
+    url: '/api/admin/area/children',
+    method: 'get',
+    params: { parentId: parentId || undefined }
+  })
+}
+
 // 查询行政区详情
 export function getAreaDetail(id) {
   return request({

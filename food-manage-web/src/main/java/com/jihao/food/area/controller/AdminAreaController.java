@@ -34,6 +34,12 @@ public class AdminAreaController {
         return Result.success(areaQueryService.getTree(type, areaId, depth));
     }
 
+    @GetMapping("/children")
+    public Result<List<Area>> children(
+            @RequestParam(required = false) Long parentId) {
+        return Result.success(areaQueryService.getChildren(parentId));
+    }
+
     @GetMapping("/detail")
     public Result<AreaDetailDTO> detail(@RequestParam Long id) {
         return Result.success(areaQueryService.getDetail(id));

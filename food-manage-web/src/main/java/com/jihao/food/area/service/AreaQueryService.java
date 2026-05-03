@@ -125,4 +125,11 @@ public class AreaQueryService {
     private AreaTreeDTO toTreeDTO(Area area) {
         return new AreaTreeDTO(area.getId(), area.getPid(), area.getName(), area.getLevel(), null);
     }
+
+    public List<Area> getChildren(Long parentId) {
+        if (parentId == null || parentId == 0) {
+            return areaMapper.selectByLevel(1, 1);
+        }
+        return areaMapper.selectByPid(parentId, 1);
+    }
 }
