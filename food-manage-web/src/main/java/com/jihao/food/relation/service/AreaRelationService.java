@@ -2,6 +2,7 @@ package com.jihao.food.relation.service;
 
 import com.jihao.food.area.entity.Area;
 import com.jihao.food.area.mapper.AreaMapper;
+import com.jihao.food.area.service.AreaCacheService;
 import com.jihao.food.common.exception.BusinessException;
 import com.jihao.food.org.entity.Organization;
 import com.jihao.food.org.mapper.OrganizationMapper;
@@ -25,6 +26,7 @@ public class AreaRelationService {
     private final AreaRelationMapper areaRelationMapper;
     private final OrganizationMapper organizationMapper;
     private final AreaMapper areaMapper;
+    private final AreaCacheService areaCacheService;
 
     public List<AreaRelation> listByDistrictId(Long districtId) {
         return areaRelationMapper.selectByOrgId(districtId);
@@ -210,30 +212,30 @@ public class AreaRelationService {
         List<Area> provinces;
 
         if (isFullTree) {
-            // 完整树：加载全部层级
-            counties = areaMapper.selectByLevel(Area.LEVEL_COUNTY);
-            cities = areaMapper.selectByLevel(Area.LEVEL_CITY);
-            provinces = areaMapper.selectByLevel(Area.LEVEL_PROVINCE);
+            // 完整树：从内存加载全部层级
+            counties = areaCacheService.getByLevel(Area.LEVEL_COUNTY);
+            cities = areaCacheService.getByLevel(Area.LEVEL_CITY);
+            provinces = areaCacheService.getByLevel(Area.LEVEL_PROVINCE);
             // 加载所有街道
-            countyIds = counties.stream().map(Area::getId).distinct().toList();
-            townships = areaMapper.selectByPidsAndLevel(countyIds, Area.LEVEL_TOWNSHIP);
+            List<Long> allCountyIds = counties.stream().map(Area::getId).distinct().toList();
+            townships = areaCacheService.getByPids(allCountyIds);
             // 所有街道都可选择
             targetStreetIds = townships.stream().map(Area::getId).collect(Collectors.toSet());
             cityIds = cities.stream().map(Area::getId).distinct().toList();
             provinceIds = provinces.stream().map(Area::getId).distinct().toList();
         } else {
-            // 按需加载：只加载涉及的层级路径
-            townships = areaMapper.selectByIdsAndLevel(new ArrayList<>(targetStreetIds), Area.LEVEL_TOWNSHIP);
+            // 按需加载：从内存加载涉及的层级路径
+            townships = areaCacheService.getByIds(targetStreetIds);
             countyIds = townships.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
             if (countyIds.isEmpty()) return Collections.emptyList();
 
-            counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
+            counties = areaCacheService.getByIds(new HashSet<>(countyIds));
             cityIds = counties.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
 
-            cities = cityIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
+            cities = cityIds.isEmpty() ? Collections.emptyList() : areaCacheService.getByIds(new HashSet<>(cityIds));
             provinceIds = cities.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
 
-            provinces = provinceIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+            provinces = provinceIds.isEmpty() ? Collections.emptyList() : areaCacheService.getByIds(new HashSet<>(provinceIds));
         }
 
         Map<Long, List<Area>> townshipByCounty = townships.stream()

@@ -19,6 +19,7 @@ import java.util.List;
 public class AreaService {
 
     private final AreaMapper areaMapper;
+    private final AreaCacheService areaCacheService;
 
     @Transactional
     public Area create(Area area) {
@@ -42,6 +43,7 @@ public class AreaService {
 
         area.setState(1);
         areaMapper.insert(area);
+        areaCacheService.refresh();
         return area;
     }
 
@@ -66,6 +68,7 @@ public class AreaService {
         }
 
         areaMapper.updateById(area);
+        areaCacheService.refresh();
         return area;
     }
 
@@ -83,6 +86,7 @@ public class AreaService {
 
         area.setState(0);
         areaMapper.updateById(area);
+        areaCacheService.refresh();
         return true;
     }
 
@@ -95,6 +99,7 @@ public class AreaService {
 
         area.setState(state);
         areaMapper.updateById(area);
+        areaCacheService.refresh();
 
         if (state == 0) {
             disableChildren(id);
@@ -158,7 +163,12 @@ public class AreaService {
                 count++;
             }
         }
+        areaCacheService.refresh();
         return count;
+    }
+
+    public void refreshCache() {
+        areaCacheService.refresh();
     }
 
     public Page<Area> listDisabled(int page, int size) {
