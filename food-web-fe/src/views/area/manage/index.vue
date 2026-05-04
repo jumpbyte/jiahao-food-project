@@ -57,11 +57,12 @@
             <span>{{ currentParentName || '请选择行政区' }}</span>
           </template>
           <el-table v-loading="tableLoading" :data="areaList" size="default">
-            <el-table-column label="ID" prop="id" width="80" />
-            <el-table-column label="名称" prop="name" :show-overflow-tooltip="true" />
-            <el-table-column label="简称" prop="shortName" width="120" />
-            <el-table-column label="行政编码" prop="adcode" width="120" />
-            <el-table-column label="状态" width="80" align="center">
+            <el-table-column label="ID" prop="id" min-width="80" />
+            <el-table-column label="名称" prop="name" min-width="150" :show-overflow-tooltip="true" />
+            <el-table-column label="简称" prop="shortName" min-width="100" />
+            <el-table-column label="行政编码" prop="adcode" min-width="120" />
+            <el-table-column label="邮政编码" prop="zipCode" min-width="100" />
+            <el-table-column label="状态" min-width="80" align="center">
               <template #default="scope">
                 <el-switch
                   v-model="scope.row.state"
@@ -71,7 +72,7 @@
                 />
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="200" align="center">
+            <el-table-column label="操作" min-width="200" align="center">
               <template #default="scope">
                 <el-button link type="primary" size="small" @click="handleView(scope.row)">查看</el-button>
                 <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
