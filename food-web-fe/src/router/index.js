@@ -77,6 +77,19 @@ export const constantRoutes = [
     meta: { title: '锁定屏幕' }
   },
   {
+    path: '/org/unified',
+    component: Layout,
+    redirect: 'noredirect',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/org/unified/index'),
+        name: 'OrgUnified',
+        meta: { title: '组织架构管理', icon: 'tree' }
+      }
+    ]
+  },
+  {
     path: '/user',
     component: Layout,
     hidden: true,

@@ -5,6 +5,7 @@ import com.jihao.food.area.mapper.AreaMapper;
 import com.jihao.food.common.exception.BusinessException;
 import com.jihao.food.org.entity.Organization;
 import com.jihao.food.org.mapper.OrganizationMapper;
+import com.jihao.food.relation.dto.StreetInfoDTO;
 import com.jihao.food.relation.entity.AreaRelation;
 import com.jihao.food.relation.mapper.AreaRelationMapper;
 import lombok.Data;
@@ -25,6 +26,51 @@ public class AreaRelationService {
 
     public List<AreaRelation> listByDistrictId(Long districtId) {
         return areaRelationMapper.selectByOrgId(districtId);
+    }
+
+    /** 返回组织已绑定街道的完整信息（含名称和省市区路径） */
+    public List<StreetInfoDTO> listStreetsWithInfo(Long orgId) {
+        List<AreaRelation> relations = areaRelationMapper.selectByOrgId(orgId);
+        if (relations.isEmpty()) return Collections.emptyList();
+
+        List<Long> areaIds = relations.stream().map(AreaRelation::getAreaId).toList();
+        List<Area> streets = areaMapper.selectByIdsAndLevel(areaIds, Area.LEVEL_TOWNSHIP);
+        Map<Long, Area> streetMap = streets.stream().collect(Collectors.toMap(Area::getId, a -> a));
+
+        List<Long> countyIds = streets.stream().map(Area::getPid).distinct().toList();
+        List<Area> counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
+        Map<Long, Area> countyMap = counties.stream().collect(Collectors.toMap(Area::getId, a -> a));
+
+        List<Long> cityIds = counties.stream().map(Area::getPid).distinct().toList();
+        List<Area> cities = areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
+        Map<Long, Area> cityMap = cities.stream().collect(Collectors.toMap(Area::getId, a -> a));
+
+        List<Long> provinceIds = cities.stream().map(Area::getPid).distinct().toList();
+        List<Area> provinces = areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+        Map<Long, Area> provinceMap = provinces.stream().collect(Collectors.toMap(Area::getId, a -> a));
+
+        return relations.stream().map(rel -> {
+            Area street = streetMap.get(rel.getAreaId());
+            if (street == null) return null;
+            Area county = countyMap.get(street.getPid());
+            Area city = county != null ? cityMap.get(county.getPid()) : null;
+            Area province = city != null ? provinceMap.get(city.getPid()) : null;
+
+            StringBuilder path = new StringBuilder();
+            if (province != null) path.append(province.getName());
+            if (city != null) path.append('/').append(city.getName());
+            if (county != null) path.append('/').append(county.getName());
+
+            StreetInfoDTO dto = new StreetInfoDTO();
+            dto.setId(rel.getId());
+            dto.setAreaId(street.getId());
+            dto.setName(street.getName());
+            dto.setProvinceName(province != null ? province.getName() : null);
+            dto.setCityName(city != null ? city.getName() : null);
+            dto.setCountyName(county != null ? county.getName() : null);
+            dto.setPathText(path.toString());
+            return dto;
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public List<Long> listAreaIdsByOrgId(Long orgId) {

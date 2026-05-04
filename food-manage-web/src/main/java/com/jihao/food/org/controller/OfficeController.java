@@ -5,6 +5,7 @@ import com.jihao.food.common.Result;
 import com.jihao.food.org.dto.OrganizationDTO;
 import com.jihao.food.org.entity.Organization;
 import com.jihao.food.org.service.OrganizationService;
+import com.jihao.food.relation.dto.StreetInfoDTO;
 import com.jihao.food.relation.entity.AreaRelation;
 import com.jihao.food.relation.service.AreaRelationService;
 import jakarta.validation.constraints.NotBlank;
@@ -67,8 +68,8 @@ public class OfficeController {
     }
 
     @GetMapping("/streets")
-    public Result<List<AreaRelation>> streets(@RequestParam Long orgId) {
-        return Result.success(areaRelationService.listByDistrictId(orgId));
+    public Result<List<StreetInfoDTO>> streets(@RequestParam Long orgId) {
+        return Result.success(areaRelationService.listStreetsWithInfo(orgId));
     }
 
     @PostMapping("/unbind-street")

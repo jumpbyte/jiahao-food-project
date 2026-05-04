@@ -5,6 +5,7 @@ import com.jihao.food.common.Result;
 import com.jihao.food.org.dto.OrganizationDTO;
 import com.jihao.food.org.entity.Organization;
 import com.jihao.food.org.service.OrganizationService;
+import com.jihao.food.relation.dto.StreetInfoDTO;
 import com.jihao.food.relation.service.AreaRelationService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -75,6 +76,11 @@ public class DistrictController {
     public Result<Void> unbindStreet(@RequestParam Long areaId, @RequestParam Long streetId) {
         areaRelationService.unbindStreet(areaId, streetId);
         return Result.success(null);
+    }
+
+    @GetMapping("/streets")
+    public Result<List<StreetInfoDTO>> streets(@RequestParam Long areaId) {
+        return Result.success(areaRelationService.listStreetsWithInfo(areaId));
     }
 
     @GetMapping("/parent")
