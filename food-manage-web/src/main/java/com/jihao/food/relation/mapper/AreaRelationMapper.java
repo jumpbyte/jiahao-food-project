@@ -33,7 +33,7 @@ public interface AreaRelationMapper extends BaseMapper<AreaRelation> {
     @Select("SELECT DISTINCT ar.area_id FROM area_relation ar " +
             "JOIN organization child ON ar.org_id = child.id " +
             "WHERE child.path LIKE CONCAT((SELECT path FROM organization WHERE id = #{parentOrgId}), '%') " +
-            "AND child.del_flag = 0 AND ar.del_flag = 0")
+            "AND child.state = 1 AND ar.del_flag = 0")
     List<Long> selectAreaIdsByParentOrg(Long parentOrgId);
 
     @Select("SELECT a.id FROM area a WHERE a.level = 4 AND a.state = 1 AND NOT EXISTS " +
