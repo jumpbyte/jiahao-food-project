@@ -95,25 +95,17 @@ public class AuthController {
         systemMenu.put("children", systemChildren);
         routes.add(systemMenu);
 
-        // 组织架构
+        // 区域管理
         Map<String, Object> orgMenu = new java.util.LinkedHashMap<>();
-        orgMenu.put("path", "/org");
+        orgMenu.put("path", "/area-manage");
         orgMenu.put("component", "Layout");
-        orgMenu.put("name", "Org");
-        orgMenu.put("meta", Map.of("title", "组织架构", "icon", "tree"));
+        orgMenu.put("name", "AreaManage");
+        orgMenu.put("meta", Map.of("title", "区域管理", "icon", "tree"));
         orgMenu.put("alwaysShow", true);
         List<Map<String, Object>> orgChildren = new java.util.ArrayList<>();
         orgChildren.add(Map.of(
-            "path", "region", "name", "Region", "component", "org/region/index",
-            "meta", Map.of("title", "大区管理", "icon", "component")
-        ));
-        orgChildren.add(Map.of(
-            "path", "office", "name", "Office", "component", "org/office/index",
-            "meta", Map.of("title", "办事处管理", "icon", "component")
-        ));
-        orgChildren.add(Map.of(
-            "path", "district", "name", "District", "component", "org/district/index",
-            "meta", Map.of("title", "片区管理", "icon", "component")
+            "path", "unified", "name", "OrgUnified", "component", "org/unified/index",
+            "meta", Map.of("title", "区域维护", "icon", "edit")
         ));
         orgMenu.put("children", orgChildren);
         routes.add(orgMenu);
