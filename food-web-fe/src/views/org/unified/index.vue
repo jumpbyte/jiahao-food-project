@@ -307,12 +307,15 @@ async function loadChildList(node) {
   }
   childListLoading.value = true
   try {
-    const apis = getCrudApis(node.type)
-    const res = await apis.list({ page: 1, size: 100 })
+    // 查询子级：大区→查办事处，办事处→查片区
+    const childType = node.type + 1
+    const apis = getCrudApis(childType)
+    const filterParam = childType === 2 ? { regionId: node.id, page: 1, size: 100 } : { officeId: node.id, page: 1, size: 100 }
+    const res = await apis.list(filterParam)
     const records = res.data?.records || res.data || []
     // 为每条记录加载已绑定街道数量
     childList.value = await Promise.all(records.map(async (item) => {
-      const streets = await fetchBoundStreetsForOrg(item.id, node.type + 1)
+      const streets = await fetchBoundStreetsForOrg(item.id, childType)
       return {
         ...item,
         streetCount: streets.length,
@@ -576,7 +579,8 @@ async function handleDelete(node) {
 async function handleDeleteChild(row) {
   proxy.$modal.confirm(`确认删除"${row.name}"吗？`).then(async () => {
     try {
-      const apis = getCrudApis(currentNode.value.type + 1)
+      const childType = currentNode.value.type + 1
+      const apis = getCrudApis(childType)
       await apis.del(row.id)
       proxy.$modal.msgSuccess('删除成功')
       await loadChildList(currentNode.value)
