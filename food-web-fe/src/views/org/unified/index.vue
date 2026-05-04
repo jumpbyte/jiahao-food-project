@@ -74,12 +74,12 @@
 
               <!-- 已关联街道 -->
               <div class="section-title">已关联街道 (共 {{ boundStreets.length }} 个)</div>
-              <el-table v-if="boundStreets.length > 0" :data="boundStreets" size="small" class="street-table">
+              <el-table v-if="boundStreetsGrouped.length > 0" :data="boundStreetsGrouped" size="small" class="street-table">
                 <el-table-column label="省/市/县" min-width="200">
-                  <template #default="scope">{{ scope.row.pathText || '-' }}</template>
+                  <template #default="scope">{{ scope.row.countyPath || '-' }}</template>
                 </el-table-column>
-                <el-table-column label="乡镇/街道名称" min-width="150">
-                  <template #default="scope">{{ scope.row.name || '-' }}</template>
+                <el-table-column label="乡镇/街道名称" min-width="200">
+                  <template #default="scope">{{ scope.row.streets.join('、') }}</template>
                 </el-table-column>
               </el-table>
               <el-empty v-else description="暂无关联街道" :image-size="60" />
@@ -99,12 +99,12 @@
                     </el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="已绑定街道" min-width="200">
+                <el-table-column label="已绑定街道" min-width="250">
                   <template #default="scope">
                     <span v-if="scope.row.streetCount > 0">
                       {{ scope.row.streetPreview }}
-                      <el-link v-if="scope.row.streetCount > 2" type="primary" @click="showStreetsDialog(scope.row)" style="margin-left: 4px;">
-                        查看{{ scope.row.streetCount - 2 }}个更多
+                      <el-link v-if="scope.row.streetCount > 3" type="primary" @click="showStreetsDialog(scope.row)" style="margin-left: 4px;">
+                        查看{{ scope.row.streetCount - 3 }}个更多
                       </el-link>
                     </span>
                     <span v-else class="no-data">—</span>
@@ -137,12 +137,12 @@
             </el-descriptions>
 
             <div class="section-title">已关联街道 (共 {{ detailStreets.length }} 个)</div>
-            <el-table v-if="detailStreets.length > 0" :data="detailStreets" size="small" class="street-table">
+            <el-table v-if="detailStreetsGrouped.length > 0" :data="detailStreetsGrouped" size="small" class="street-table">
               <el-table-column label="省/市/县" min-width="200">
-                <template #default="scope">{{ scope.row.pathText || '-' }}</template>
+                <template #default="scope">{{ scope.row.countyPath || '-' }}</template>
               </el-table-column>
-              <el-table-column label="乡镇/街道名称" min-width="150">
-                <template #default="scope">{{ scope.row.name || '-' }}</template>
+              <el-table-column label="乡镇/街道名称" min-width="200">
+                <template #default="scope">{{ scope.row.streets.join('、') }}</template>
               </el-table-column>
             </el-table>
             <el-empty v-else description="暂无关联街道" :image-size="60" />
@@ -196,13 +196,13 @@
     </el-row>
 
     <!-- 街道详情对话框 -->
-    <el-dialog :title="streetsDialogTitle" v-model="streetsDialogOpen" width="600px" append-to-body>
-      <el-table :data="allStreetsForDialog" size="small">
+    <el-dialog :title="streetsDialogTitle" v-model="streetsDialogOpen" width="650px" append-to-body>
+      <el-table :data="groupStreetsByCounty(allStreetsForDialog)" size="small">
         <el-table-column label="省/市/县" min-width="200">
-          <template #default="scope">{{ scope.row.pathText || '-' }}</template>
+          <template #default="scope">{{ scope.row.countyPath || '-' }}</template>
         </el-table-column>
-        <el-table-column label="乡镇/街道名称" min-width="150">
-          <template #default="scope">{{ scope.row.name || '-' }}</template>
+        <el-table-column label="乡镇/街道名称" min-width="200">
+          <template #default="scope">{{ scope.row.streets.join('、') }}</template>
         </el-table-column>
       </el-table>
     </el-dialog>
@@ -249,10 +249,14 @@ const treeRef = ref(null)
 const formRef = ref(null)
 const streetTreeRef = ref(null)
 
-// 街道对话框
+// ===== 街道对话框
 const streetsDialogOpen = ref(false)
 const allStreetsForDialog = ref([])
 const streetsDialogTitle = ref('')
+
+// ===== 聚合计算 =====
+const boundStreetsGrouped = computed(() => groupStreetsByCounty(boundStreets.value))
+const detailStreetsGrouped = computed(() => groupStreetsByCounty(detailStreets.value))
 
 // ===== 计算属性 =====
 const headerTitle = computed(() => {
@@ -312,7 +316,7 @@ async function loadChildList(node) {
       return {
         ...item,
         streetCount: streets.length,
-        streetPreview: streets.slice(0, 2).map(s => s.name).join('、'),
+        streetPreview: formatStreetsPreview(streets.slice(0, 3)),
         _allStreets: streets
       }
     }))
@@ -351,6 +355,28 @@ async function fetchBoundStreetsForOrg(orgId, type) {
   } catch {
     return []
   }
+}
+
+/** 将街道列表按县区聚合 */
+function groupStreetsByCounty(streets) {
+  const map = new Map()
+  for (const s of streets) {
+    // pathText = 省/市/县, 提取县区路径
+    const parts = (s.pathText || '').split('/')
+    const countyKey = parts.length >= 3 ? parts.slice(0, 3).join('/') : parts.length >= 1 ? parts.join('/') : '未知'
+    if (!map.has(countyKey)) {
+      map.set(countyKey, { countyPath: countyKey, streets: [] })
+    }
+    map.get(countyKey).streets.push(s.name)
+  }
+  return Array.from(map.values())
+}
+
+/** 将街道列表聚合为紧凑文本（用于子级列表预览） */
+function formatStreetsPreview(streets) {
+  const groups = groupStreetsByCounty(streets)
+  const parts = groups.map(g => `${g.countyPath} — ${g.streets.join('、')}`)
+  return parts.join('；')
 }
 
 function buildPathText(item) {

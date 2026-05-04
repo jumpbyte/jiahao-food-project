@@ -20,6 +20,8 @@ public class OrganizationTreeDTO {
 
     private Integer type;
 
+    private Integer state;
+
     private List<OrganizationTreeDTO> children;
 
     public void addChild(OrganizationTreeDTO child) {

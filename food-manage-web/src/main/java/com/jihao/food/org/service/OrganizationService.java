@@ -164,7 +164,7 @@ public class OrganizationService {
     }
 
     private OrganizationTreeDTO toTreeDTO(Organization org) {
-        return new OrganizationTreeDTO(org.getId(), org.getParentId(), org.getName(), org.getType(), new ArrayList<>());
+        return new OrganizationTreeDTO(org.getId(), org.getParentId(), org.getName(), org.getType(), org.getState(), new ArrayList<>());
     }
 
     private void validateNameUnique(Organization org) {
