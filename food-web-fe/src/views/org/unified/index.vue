@@ -461,11 +461,12 @@ async function handleAddRoot() {
 async function loadFormStreetTree(editOrgId, parentNode) {
   try {
     let res
-    const apis = getCrudApis(parentNode.type)
-    // 办事处/片区需要传 orgId 获取受限树
+    // 使用表单目标类型（子级类型）获取正确的 API，而非父节点类型
+    const apis = getCrudApis(formType.value)
     if (editOrgId) {
+      // 编辑模式：传被编辑组织的 ID
       res = await apis.getSelectableTree(editOrgId)
-    } else {
+    } else if (parentNode) {
       // 新建子级：传父组织 ID
       res = await apis.getSelectableTree(parentNode.id)
     }
