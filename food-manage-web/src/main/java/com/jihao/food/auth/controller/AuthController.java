@@ -99,9 +99,10 @@ public class AuthController {
         Map<String, Object> orgMenu = new java.util.LinkedHashMap<>();
         orgMenu.put("path", "/area-manage");
         orgMenu.put("component", "Layout");
-        orgMenu.put("name", "AreaManage");
+        orgMenu.put("name", "AreaManageRoot");
         orgMenu.put("meta", Map.of("title", "区域管理", "icon", "tree"));
         orgMenu.put("alwaysShow", true);
+        orgMenu.put("redirect", "noRedirect");
         List<Map<String, Object>> orgChildren = new java.util.ArrayList<>();
         orgChildren.add(Map.of(
             "path", "unified", "name", "OrgUnified", "component", "org/unified/index",

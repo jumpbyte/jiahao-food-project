@@ -43,6 +43,16 @@ const usePermissionStore = defineStore(
             const defaultRoutes = filterAsyncRouter(defaultData)
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
+            // 注册后端动态路由
+            rewriteRoutes.forEach(route => {
+              router.addRoute(route)
+            })
+            // catch-all 路由必须最后注册，确保优先级最低
+            router.addRoute({
+              path: '/:pathMatch(.*)*',
+              component: () => import('@/views/error/404'),
+              hidden: true
+            })
             this.setRoutes(rewriteRoutes)
             this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
             this.setDefaultRoutes(sidebarRoutes)

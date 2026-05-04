@@ -28,6 +28,9 @@
                   {{ node.label }}
                 </span>
                 <span class="node-actions">
+                  <el-button link type="primary" size="small" @click.stop="handleEditNode(data)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
                   <el-button link type="primary" size="small" @click.stop="handleAddChild(data)" v-if="data.type < 3">
                     <el-icon><Plus /></el-icon>
                   </el-button>
@@ -183,7 +186,7 @@
               </el-form-item>
 
               <!-- 冲突提示 -->
-              <el-alert v-if="streetConflict" :title="streetConflict.message" type="warning" :closable="false" show-icon style="margin-bottom: 16px;" />
+              <div v-if="streetConflict" class="street-conflict-text">{{ streetConflict.message }}</div>
             </el-form>
 
             <div style="margin-top: 16px;">
@@ -211,7 +214,7 @@
 
 <script setup name="OrgUnified">
 import { ref, computed, nextTick } from 'vue'
-import { Plus, Delete, Refresh } from '@element-plus/icons-vue'
+import { Plus, Delete, Refresh, Edit } from '@element-plus/icons-vue'
 import {
   getOrgTree,
   getCrudApis,
@@ -403,10 +406,21 @@ async function handleView(row) {
   viewMode.value = 'detail'
 }
 
+// ===== 树节点编辑 =====
+async function handleEditNode(data) {
+  currentNode.value = data
+  // 构建行数据用于 handleEdit
+  const row = { id: data.id, name: data.name, state: data.state ?? 1 }
+  await handleEdit(row)
+}
+
 // ===== 编辑 =====
 async function handleEdit(row) {
   detailData.value = { ...row }
-  formType.value = currentNode.value.type + 1
+  // 如果编辑的是当前选中节点本身（从树节点点击编辑），type 直接用节点 type
+  // 如果编辑的是子级列表中的行，type 是 currentNode.type + 1
+  const isEditingCurrentNode = currentNode.value && currentNode.value.id === row.id
+  formType.value = isEditingCurrentNode ? currentNode.value.type : currentNode.value.type + 1
   form.value = {
     id: row.id,
     name: row.name,
@@ -552,8 +566,13 @@ async function submitForm() {
       }
     }
   } catch (e) {
-    const msg = e.response?.data?.msg || e.message || '操作失败'
-    proxy.$modal.msgError(msg)
+    // 冲突错误显示在表单内（红色提示）
+    const errMsg = e.response?.data?.message || e.response?.data?.msg || e.message
+    if (errMsg && errMsg.includes('被') && errMsg.includes('占用')) {
+      streetConflict.value = { message: errMsg }
+    } else {
+      proxy.$modal.msgError(errMsg || '操作失败')
+    }
   } finally {
     formLoading.value = false
   }
@@ -745,5 +764,12 @@ loadTree()
 
 .no-data {
   color: #c0c4cc;
+}
+
+.street-conflict-text {
+  color: #f56c6c;
+  font-size: 13px;
+  margin-top: 8px;
+  line-height: 1.6;
 }
 </style>

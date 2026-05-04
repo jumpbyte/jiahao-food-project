@@ -1,8 +1,8 @@
 <template>
   <div class="home-page">
     <div class="welcome-content">
-      <h1 class="title">餐饮管理系统</h1>
-      <p class="subtitle">Catering Management System</p>
+      <h1 class="title">嘉豪食品中台系统</h1>
+      <p class="subtitle">Jia Hao Food Management System</p>
       <div class="info-row">
         <span>欢迎使用</span>
         <span v-if="loginTime" class="divider">|</span>

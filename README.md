@@ -4,4 +4,17 @@
 ## 头脑风暴命令
 
 
-/superpowers:brainstorming 打开行政区维护 报这个错误 [Vue Router warn]: Record with path "/area/manage" is either missing a "component(s)" or "children" property.
+/superpowers:brainstorming   系统未知错误，请反馈给管理员 api/admin/region/selectable-area-tree?orgId=4 这个接口响应耗时比较严重 如何优化
+
+
+1. 组织层级固定为 3 级：大区 → 办事处 → 片区
+2. 大区、办事处、片区名称在各自层级内必须唯一
+3. **大区/办事处/片区的新建或修改都必须关联一个或多个街道/乡镇级别行政区**（通过 area_relation 表）
+4. **层级约束规则**：
+    - 办事处可关联的街道/乡镇 ⊆ 所属大区已关联的街道/乡镇
+    - 片区可关联的街道/乡镇 ⊆ 所属办事处已关联的街道/乡镇
+    - 创建/修改绑定关系时自动校验，超出父级管辖范围则拒绝
+5. **一个街道/乡镇只能归属一个片区**（通过 area_relation 唯一约束保证）
+6. 大区/办事处/片区的删除规则：
+    - 有子节点不可删除
+    - 有绑定街道关系不可删除

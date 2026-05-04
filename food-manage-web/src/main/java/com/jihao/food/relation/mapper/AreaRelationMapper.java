@@ -36,9 +36,22 @@ public interface AreaRelationMapper extends BaseMapper<AreaRelation> {
             "AND child.state = 1 AND ar.del_flag = 0")
     List<Long> selectAreaIdsByParentOrg(Long parentOrgId);
 
-    @Select("SELECT a.id FROM area a WHERE a.level = 4 AND a.state = 1 AND NOT EXISTS " +
-            "(SELECT 1 FROM area_relation ar " +
-            "JOIN organization o ON ar.org_id = o.id " +
-            "WHERE ar.area_id = a.id AND o.type = #{orgType} AND ar.del_flag = 0 AND o.state = 1)")
+    @Select("SELECT a.id FROM area a " +
+            "LEFT JOIN area_relation ar ON ar.area_id = a.id AND ar.del_flag = 0 " +
+            "LEFT JOIN organization o ON o.id = ar.org_id AND o.type = #{orgType} AND o.state = 1 " +
+            "WHERE a.level = 4 AND a.state = 1 AND o.id IS NULL")
     List<Long> selectUnboundStreetsByOrgType(@Param("orgType") Integer orgType);
+
+    /** 查询指定街道中被同级组织（排除当前组织）绑定的：streetId -> orgId 映射 */
+    @Select("<script>" +
+            "SELECT ar.area_id, ar.org_id FROM area_relation ar " +
+            "JOIN organization o ON ar.org_id = o.id " +
+            "WHERE ar.area_id IN " +
+            "<foreach collection='streetIds' item='sid' open='(' separator=',' close=')'>#{sid}</foreach> " +
+            "AND o.type = #{orgType} AND ar.del_flag = 0 AND o.state = 1" +
+            "<if test='excludeOrgId != null'> AND ar.org_id != #{excludeOrgId}</if>" +
+            "</script>")
+    List<java.util.Map<String, Object>> selectStreetOrgConflicts(@Param("streetIds") List<Long> streetIds,
+                                                                   @Param("orgType") Integer orgType,
+                                                                   @Param("excludeOrgId") Long excludeOrgId);
 }

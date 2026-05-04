@@ -2,6 +2,7 @@ package com.jihao.food.org.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jihao.food.common.Result;
+import com.jihao.food.common.exception.BusinessException;
 import com.jihao.food.org.dto.OrganizationDTO;
 import com.jihao.food.org.entity.Organization;
 import com.jihao.food.org.service.OrganizationService;
@@ -43,6 +44,10 @@ public class OfficeController {
         org.setParentId(request.getRegionId());
         Organization created = organizationService.create(org);
         if (request.getStreetIds() != null && !request.getStreetIds().isEmpty()) {
+            String conflict = areaRelationService.validateStreetConflict(created.getId(), Organization.TYPE_OFFICE, request.getStreetIds());
+            if (conflict != null) {
+                throw new BusinessException(601, conflict);
+            }
             areaRelationService.bindStreetsWithValidation(created.getId(), request.getStreetIds(), request.getRegionId());
         }
         return Result.success(created);
@@ -63,6 +68,10 @@ public class OfficeController {
     public Result<Integer> bindStreets(@Validated @RequestBody BindStreetsRequest request) {
         Organization office = organizationService.getById(request.getOrgId());
         Long parentOrgId = office != null ? office.getParentId() : null;
+        String conflict = areaRelationService.validateStreetConflict(request.getOrgId(), Organization.TYPE_OFFICE, request.getStreetIds());
+        if (conflict != null) {
+            throw new BusinessException(601, conflict);
+        }
         int count = areaRelationService.bindStreetsWithValidation(request.getOrgId(), request.getStreetIds(), parentOrgId);
         return Result.success(count);
     }

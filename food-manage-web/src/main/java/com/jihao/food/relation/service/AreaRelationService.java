@@ -10,6 +10,8 @@ import com.jihao.food.relation.entity.AreaRelation;
 import com.jihao.food.relation.mapper.AreaRelationMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,16 +39,16 @@ public class AreaRelationService {
         List<Area> streets = areaMapper.selectByIdsAndLevel(areaIds, Area.LEVEL_TOWNSHIP);
         Map<Long, Area> streetMap = streets.stream().collect(Collectors.toMap(Area::getId, a -> a));
 
-        List<Long> countyIds = streets.stream().map(Area::getPid).distinct().toList();
-        List<Area> counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
+        List<Long> countyIds = streets.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
+        List<Area> counties = countyIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
         Map<Long, Area> countyMap = counties.stream().collect(Collectors.toMap(Area::getId, a -> a));
 
-        List<Long> cityIds = counties.stream().map(Area::getPid).distinct().toList();
-        List<Area> cities = areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
+        List<Long> cityIds = counties.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
+        List<Area> cities = cityIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
         Map<Long, Area> cityMap = cities.stream().collect(Collectors.toMap(Area::getId, a -> a));
 
-        List<Long> provinceIds = cities.stream().map(Area::getPid).distinct().toList();
-        List<Area> provinces = areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+        List<Long> provinceIds = cities.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
+        List<Area> provinces = provinceIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
         Map<Long, Area> provinceMap = provinces.stream().collect(Collectors.toMap(Area::getId, a -> a));
 
         return relations.stream().map(rel -> {
@@ -79,6 +81,48 @@ public class AreaRelationService {
         return areaRelationMapper.selectAreaIdsByOrgIdAndType(orgId, org.getType());
     }
 
+    /**
+     * 校验街道是否被同级组织占用。
+     * 返回冲突信息：按组织聚合，如"XX街道,YY街道被华东大区占用；AA街道被南京办事处占用"
+     */
+    public String validateStreetConflict(Long orgId, int orgType, List<Long> streetIds) {
+        if (streetIds == null || streetIds.isEmpty()) return null;
+        List<Map<String, Object>> conflicts = areaRelationMapper.selectStreetOrgConflicts(streetIds, orgType, orgId);
+        if (conflicts.isEmpty()) return null;
+
+        // 按组织分组：orgId -> [streetId, ...]
+        Map<Long, List<Long>> orgToStreets = new LinkedHashMap<>();
+        for (Map<String, Object> c : conflicts) {
+            Long conflictOrgId = ((Number) c.get("org_id")).longValue();
+            Long streetId = ((Number) c.get("area_id")).longValue();
+            orgToStreets.computeIfAbsent(conflictOrgId, k -> new ArrayList<>()).add(streetId);
+        }
+
+        // 批量查询街道名和组织名
+        Set<Long> allStreetIds = orgToStreets.values().stream().flatMap(List::stream).collect(Collectors.toSet());
+        Set<Long> allOrgIds = orgToStreets.keySet();
+        List<Area> streets = areaMapper.selectByIdsAndLevel(new ArrayList<>(allStreetIds), Area.LEVEL_TOWNSHIP);
+        Map<Long, String> streetNameMap = streets.stream().collect(Collectors.toMap(Area::getId, Area::getName));
+        Map<Long, String> orgNameMap = new LinkedHashMap<>();
+        for (Long oid : allOrgIds) {
+            Organization org = organizationMapper.selectById(oid);
+            orgNameMap.put(oid, org != null ? org.getName() : "未知组织");
+        }
+
+        // 聚合拼接
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Long, List<Long>> entry : orgToStreets.entrySet()) {
+            if (sb.length() > 0) sb.append("；");
+            String orgName = orgNameMap.get(entry.getKey());
+            String streetNames = entry.getValue().stream()
+                    .map(sid -> streetNameMap.getOrDefault(sid, "未知街道"))
+                    .collect(Collectors.joining(","));
+            sb.append(streetNames).append("被").append(orgName).append("占用");
+        }
+        return sb.toString();
+    }
+
+    @CacheEvict(value = "selectableAreaTree", allEntries = true)
     @Transactional
     public int bindStreets(Long orgId, List<Long> streetIds) {
         int count = 0;
@@ -96,6 +140,7 @@ public class AreaRelationService {
         return count;
     }
 
+    @CacheEvict(value = "selectableAreaTree", allEntries = true)
     @Transactional
     public int bindStreetsWithValidation(Long orgId, List<Long> streetIds, Long parentOrgId) {
         if (parentOrgId == null || parentOrgId == 0) {
@@ -114,6 +159,7 @@ public class AreaRelationService {
         return bindStreets(orgId, streetIds);
     }
 
+    @CacheEvict(value = "selectableAreaTree", allEntries = true)
     @Transactional
     public boolean unbindStreet(Long orgId, Long streetId) {
         AreaRelation relation = areaRelationMapper.selectByAreaIdAndOrgId(streetId, orgId);
@@ -129,6 +175,7 @@ public class AreaRelationService {
         return areaRelationMapper.selectByAreaId(areaId);
     }
 
+    @Cacheable(value = "selectableAreaTree", key = "#orgId + '-' + #parentOrgId")
     public List<AreaTreeNode> getSelectableAreaTree(Long orgId, Long parentOrgId) {
         // 1. 查出该组织已绑定的街道ID
         Set<Long> boundStreetIds = new HashSet<>(listAreaIdsByOrgId(orgId));
@@ -177,16 +224,16 @@ public class AreaRelationService {
         } else {
             // 按需加载：只加载涉及的层级路径
             townships = areaMapper.selectByIdsAndLevel(new ArrayList<>(targetStreetIds), Area.LEVEL_TOWNSHIP);
-            countyIds = townships.stream().map(Area::getPid).distinct().toList();
+            countyIds = townships.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
             if (countyIds.isEmpty()) return Collections.emptyList();
 
             counties = areaMapper.selectByIdsAndLevel(countyIds, Area.LEVEL_COUNTY);
-            cityIds = counties.stream().map(Area::getPid).distinct().toList();
+            cityIds = counties.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
 
-            cities = areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
-            provinceIds = cities.stream().map(Area::getPid).distinct().toList();
+            cities = cityIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(cityIds, Area.LEVEL_CITY);
+            provinceIds = cities.stream().map(Area::getPid).filter(Objects::nonNull).distinct().toList();
 
-            provinces = areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
+            provinces = provinceIds.isEmpty() ? Collections.emptyList() : areaMapper.selectByIdsAndLevel(provinceIds, Area.LEVEL_PROVINCE);
         }
 
         Map<Long, List<Area>> townshipByCounty = townships.stream()

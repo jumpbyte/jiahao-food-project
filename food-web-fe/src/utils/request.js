@@ -80,8 +80,8 @@ service.interceptors.response.use(res => {
     }
     // 未设置状态码则默认成功状态
     const code = res.data.code || 200
-    // 获取错误信息
-    const msg = errorCode[code] || res.data.msg || errorCode['default']
+    // 获取错误信息：后端用 message 字段，RuoYi 期望 msg 字段，做兼容
+    const msg = errorCode[code] || res.data.msg || res.data.message || errorCode['default']
     // 二进制数据则直接返回
     if (res.request.responseType ===  'blob' || res.request.responseType ===  'arraybuffer') {
       return res.data
@@ -103,7 +103,7 @@ service.interceptors.response.use(res => {
       ElMessage({ message: msg, type: 'error' })
       return Promise.reject(new Error(msg))
     } else if (code === 601) {
-      ElMessage({ message: msg, type: 'warning' })
+      // 不自动弹窗，交由业务层自行处理（如表单内显示冲突信息）
       return Promise.reject(new Error(msg))
     } else if (code !== 200) {
       ElNotification.error({ title: msg })
