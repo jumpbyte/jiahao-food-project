@@ -5,7 +5,6 @@ import com.jihao.food.common.annotation.IgnoreSign;
 import com.jihao.food.common.util.SignUtil;
 import com.jihao.food.system.entity.SysApiKey;
 import com.jihao.food.system.mapper.SysApiKeyMapper;
-import com.jihao.food.common.util.SignUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;

@@ -8,7 +8,8 @@ public final class SignUtil {
 
     /**
      * 生成 API 签名
-     * 公式: sign = MD5(appKey + timestamp + nonce + body + secret)
+     * 公式: sign = MD5(appKey + timestamp + nonce + content + secret)
+     * content: 排序后的 query params + request body
      */
     public static String generateSign(String appKey, long timestamp, String nonce, String body, String secret) {
         String signStr = appKey + timestamp + nonce + body + secret;
