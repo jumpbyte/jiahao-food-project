@@ -64,13 +64,13 @@ public class DistrictController {
 
     @PostMapping("/bind-streets")
     public Result<Integer> bindStreets(@Validated @RequestBody BindStreetsRequest request) {
-        Organization district = organizationService.getById(request.getAreaId());
+        Organization district = organizationService.getById(request.getOrgId());
         Long parentOrgId = district != null ? district.getParentId() : null;
-        String conflict = areaRelationService.validateStreetConflict(request.getAreaId(), Organization.TYPE_DISTRICT, request.getStreetIds());
+        String conflict = areaRelationService.validateStreetConflict(request.getOrgId(), Organization.TYPE_DISTRICT, request.getStreetIds());
         if (conflict != null) {
             throw new BusinessException(601, conflict);
         }
-        int count = areaRelationService.bindStreetsWithValidation(request.getAreaId(), request.getStreetIds(), parentOrgId);
+        int count = areaRelationService.bindStreetsWithValidation(request.getOrgId(), request.getStreetIds(), parentOrgId);
         return Result.success(count);
     }
 
@@ -137,7 +137,7 @@ public class DistrictController {
     @Data
     static class BindStreetsRequest {
         @NotNull(message = "片区 ID 不能为空")
-        private Long areaId;
+        private Long orgId;
         @NotEmpty(message = "街道 ID 列表不能为空")
         private List<Long> streetIds;
     }
