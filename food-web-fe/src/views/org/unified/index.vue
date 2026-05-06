@@ -490,7 +490,7 @@ async function loadFormStreetTree(editOrgId, parentNode) {
     // 加载已绑定街道（编辑模式）
     if (editOrgId) {
       const streets = await fetchBoundStreetsForOrg(editOrgId, formType.value)
-      checkedStreetIds.value = streets.map(s => s.id)
+      checkedStreetIds.value = streets.map(s => s.areaId)
       selectedStreetIds.value = [...checkedStreetIds.value]
     } else {
       checkedStreetIds.value = []
