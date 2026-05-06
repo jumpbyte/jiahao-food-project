@@ -10,7 +10,7 @@
       <!-- 左侧：组织树 -->
       <el-col :span="7">
         <el-card shadow="never" class="tree-card">
-          <template #header><span>组织架构</span></template>
+          <template #header><span>区域组织</span></template>
           <el-tree
             ref="treeRef"
             :data="treeData"
@@ -263,7 +263,7 @@ const detailStreetsGrouped = computed(() => groupStreetsByCounty(detailStreets.v
 
 // ===== 计算属性 =====
 const headerTitle = computed(() => {
-  if (!currentNode.value) return '组织架构'
+  if (!currentNode.value) return '展示区域'
   if (viewMode.value === 'list') return `${typeLabel(currentNode.value.type)} - ${currentNode.value.name}`
   if (viewMode.value === 'detail') return `详情 - ${detailData.value.name}`
   if (viewMode.value === 'new') return `新建${typeLabel(formType.value)}`

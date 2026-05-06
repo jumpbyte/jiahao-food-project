@@ -4,7 +4,7 @@
 ## 头脑风暴命令
 
 
-/superpowers:brainstorming   系统未知错误，请反馈给管理员 api/admin/region/selectable-area-tree?orgId=4 这个接口响应耗时比较严重 如何优化
+/superpowers:brainstorming 编辑片区保存时，绑定街道 api/admin/district/bind-streets 接口返回“片区 ID 不能为空” ，请分析问题原因
 
 
 1. 组织层级固定为 3 级：大区 → 办事处 → 片区
