@@ -16,6 +16,11 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -72,13 +77,41 @@ public class ApiSignInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        String body = getRequestBody(request);
-        if (!SignUtil.verifySign(appKey, ts, nonce, body, apiKey.getAppSecret(), sign)) {
+        String signContent = getSignContent(request);
+        if (!SignUtil.verifySign(appKey, ts, nonce, signContent, apiKey.getAppSecret(), sign)) {
             sendError(response, "签名验证失败", 401);
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * 获取签名内容：排序后的 query params + request body
+     */
+    private String getSignContent(HttpServletRequest request) {
+        String sortedQuery = getSortedQueryString(request);
+        String body = getRequestBody(request);
+        return sortedQuery + body;
+    }
+
+    /**
+     * 将 query params 按 key 升序排序后拼接为 key1=value1&key2=value2
+     */
+    private String getSortedQueryString(HttpServletRequest request) {
+        Map<String, String[]> params = request.getParameterMap();
+        if (params.isEmpty()) {
+            return "";
+        }
+
+        return params.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    String key = entry.getKey();
+                    String value = entry.getValue().length > 0 ? entry.getValue()[0] : "";
+                    return key + "=" + value;
+                })
+                .collect(Collectors.joining("&"));
     }
 
     private String getRequestBody(HttpServletRequest request) {
@@ -87,8 +120,8 @@ public class ApiSignInterceptor implements HandlerInterceptor {
             if (content.length > 0) {
                 try {
                     return new String(content, request.getCharacterEncoding());
-                } catch (java.io.UnsupportedEncodingException e) {
-                    return new String(content, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (UnsupportedEncodingException e) {
+                    return new String(content, StandardCharsets.UTF_8);
                 }
             }
         }
@@ -99,5 +132,9 @@ public class ApiSignInterceptor implements HandlerInterceptor {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(objectMapper.writeValueAsString(Result.error(code, message)));
+    }
+
+    void setTimeWindowMs(long timeWindowMs) {
+        this.timeWindowMs = timeWindowMs;
     }
 }
