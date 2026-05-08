@@ -4,7 +4,8 @@
 ## 头脑风暴命令
 
 
-/superpowers:brainstorming 编辑片区保存时，绑定街道 api/admin/district/bind-streets 接口返回“片区 ID 不能为空” ，请分析问题原因
+/superpowers:brainstorming 目前后端已经启动，请使用 apikey = demo, secret==e02ca276f7d444c099f571d7bee8fac6 测试下/api/open/**的所有接口
+
 
 
 1. 组织层级固定为 3 级：大区 → 办事处 → 片区
