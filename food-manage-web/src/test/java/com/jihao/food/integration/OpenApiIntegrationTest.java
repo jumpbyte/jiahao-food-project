@@ -234,4 +234,54 @@ class OpenApiIntegrationTest {
             .andExpect(jsonPath("$.code").value(0))
             .andExpect(jsonPath("$.data").isArray());
     }
+
+    // ===== 行政区列表接口测试 =====
+
+    @Test
+    void provinceList_shouldReturnNonEmptyList() throws Exception {
+        String result = mockMvc.perform(signedGet("/api/open/area/province-list", null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
+
+    @Test
+    void cityList_shouldReturnList() throws Exception {
+        String result = mockMvc.perform(signedGet("/api/open/area/city-list", null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
+
+    @Test
+    void countyList_shouldReturnList() throws Exception {
+        String result = mockMvc.perform(signedGet("/api/open/area/county-list", null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
+
+    @Test
+    void townshipList_shouldReturnList() throws Exception {
+        String result = mockMvc.perform(signedGet("/api/open/area/township-list", null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
 }
