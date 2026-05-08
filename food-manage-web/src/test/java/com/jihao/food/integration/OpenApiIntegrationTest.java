@@ -72,4 +72,54 @@ class OpenApiIntegrationTest {
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.joining("&"));
     }
+
+    // ===== 签名验证测试 =====
+
+    @Test
+    void preHandle_withValidSign_shouldReturnSuccess() throws Exception {
+        mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    void preHandle_wrongSecret_shouldReturnSignError() throws Exception {
+        long timestamp = System.currentTimeMillis();
+        String nonce = "test-nonce-wrong-secret";
+        // 用错误的 secret 计算签名
+        String wrongSign = SignUtil.generateSign(APP_KEY, timestamp, nonce, "", "wrong_secret_value");
+
+        mockMvc.perform(get("/api/open/area/provinces")
+                .header("appKey", APP_KEY)
+                .header("timestamp", String.valueOf(timestamp))
+                .header("nonce", nonce)
+                .header("sign", wrongSign))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(401))
+            .andExpect(jsonPath("$.message").value("签名验证失败"));
+    }
+
+    @Test
+    void preHandle_missingHeaders_shouldReturnMissingParamError() throws Exception {
+        mockMvc.perform(get("/api/open/area/provinces"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(401))
+            .andExpect(jsonPath("$.message").value("签名参数缺失"));
+    }
+
+    @Test
+    void preHandle_expiredTimestamp_shouldReturnExpiredError() throws Exception {
+        long expiredTs = System.currentTimeMillis() - 600_000; // 10 分钟前
+        String nonce = "test-nonce-expired";
+        String sign = SignUtil.generateSign(APP_KEY, expiredTs, nonce, "", APP_SECRET);
+
+        mockMvc.perform(get("/api/open/area/provinces")
+                .header("appKey", APP_KEY)
+                .header("timestamp", String.valueOf(expiredTs))
+                .header("nonce", nonce)
+                .header("sign", sign))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(401))
+            .andExpect(jsonPath("$.message").value("请求已过期"));
+    }
 }
