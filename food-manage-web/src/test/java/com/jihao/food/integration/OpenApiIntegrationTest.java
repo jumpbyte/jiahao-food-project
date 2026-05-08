@@ -3,21 +3,21 @@ package com.jihao.food.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jihao.food.common.util.SignUtil;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -47,7 +47,7 @@ class OpenApiIntegrationTest {
             Map<String, Object> params,
             String requestBody) {
         long timestamp = System.currentTimeMillis();
-        String nonce = java.util.UUID.randomUUID().toString();
+        String nonce = UUID.randomUUID().toString();
         String queryPart = buildQueryPart(params);
         String content = queryPart + (requestBody != null ? requestBody : "");
         String sign = SignUtil.generateSign(APP_KEY, timestamp, nonce, content, APP_SECRET);
@@ -70,6 +70,6 @@ class OpenApiIntegrationTest {
         return params.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
             .map(e -> e.getKey() + "=" + e.getValue())
-            .collect(java.util.stream.Collectors.joining("&"));
+            .collect(Collectors.joining("&"));
     }
 }
