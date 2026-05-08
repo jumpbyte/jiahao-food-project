@@ -235,6 +235,58 @@ class OpenApiIntegrationTest {
             .andExpect(jsonPath("$.data").isArray());
     }
 
+    // ===== 组织归属查询接口测试 =====
+
+    @Test
+    void getOrg_withValidAreaId_shouldReturnResult() throws Exception {
+        Long townshipId = getTownshipId();
+        if (townshipId == null) return;
+
+        mockMvc.perform(signedGet("/api/open/geo/org", Map.of("areaId", townshipId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    void getOrgByTownship_withValidTownshipId_shouldReturnResult() throws Exception {
+        Long townshipId = getTownshipId();
+        if (townshipId == null) return;
+
+        mockMvc.perform(signedGet("/api/open/geo/org/by-township", Map.of("townshipId", townshipId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0));
+    }
+
+    /**
+     * 辅助方法：从数据库获取一个 township ID。
+     * province → city → county → township
+     */
+    private Long getTownshipId() throws Exception {
+        String provinceResult = mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andReturn().getResponse().getContentAsString();
+        JsonNode provinces = objectMapper.readTree(provinceResult).get("data");
+        if (provinces.isEmpty()) return null;
+        Long provinceId = provinces.get(0).get("id").asLong();
+
+        String cityResult = mockMvc.perform(signedGet("/api/open/area/cities", Map.of("provinceId", provinceId)))
+            .andReturn().getResponse().getContentAsString();
+        JsonNode cities = objectMapper.readTree(cityResult).get("data");
+        if (cities.isEmpty()) return null;
+        Long cityId = cities.get(0).get("id").asLong();
+
+        String countyResult = mockMvc.perform(signedGet("/api/open/area/counties", Map.of("cityId", cityId)))
+            .andReturn().getResponse().getContentAsString();
+        JsonNode counties = objectMapper.readTree(countyResult).get("data");
+        if (counties.isEmpty()) return null;
+        Long countyId = counties.get(0).get("id").asLong();
+
+        String townshipResult = mockMvc.perform(signedGet("/api/open/area/townships", Map.of("countyId", countyId)))
+            .andReturn().getResponse().getContentAsString();
+        JsonNode townships = objectMapper.readTree(townshipResult).get("data");
+        if (townships.isEmpty()) return null;
+        return townships.get(0).get("id").asLong();
+    }
+
     // ===== 行政区列表接口测试 =====
 
     @Test
