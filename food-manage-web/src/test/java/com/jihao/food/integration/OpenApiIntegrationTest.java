@@ -122,4 +122,110 @@ class OpenApiIntegrationTest {
             .andExpect(jsonPath("$.code").value(401))
             .andExpect(jsonPath("$.message").value("请求已过期"));
     }
+
+    // ===== 行政区查询接口测试 =====
+
+    @Test
+    void provinces_shouldReturnNonEmptyList() throws Exception {
+        String result = mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+        assertThat(data.get(0).has("name")).isTrue();
+        assertThat(data.get(0).has("id")).isTrue();
+    }
+
+    @Test
+    void cities_withValidProvinceId_shouldReturnCities() throws Exception {
+        // 先获取一个 province ID
+        String provinceResult = mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andReturn().getResponse().getContentAsString();
+        Long provinceId = objectMapper.readTree(provinceResult).get("data").get(0).get("id").asLong();
+
+        Map<String, Object> params = Map.of("provinceId", provinceId);
+        String result = mockMvc.perform(signedGet("/api/open/area/cities", params))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
+
+    @Test
+    void counties_withValidCityId_shouldReturnCounties() throws Exception {
+        // 先获取 province → city → county
+        String provinceResult = mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andReturn().getResponse().getContentAsString();
+        Long provinceId = objectMapper.readTree(provinceResult).get("data").get(0).get("id").asLong();
+
+        String cityResult = mockMvc.perform(signedGet("/api/open/area/cities", Map.of("provinceId", provinceId)))
+            .andReturn().getResponse().getContentAsString();
+        JsonNode cities = objectMapper.readTree(cityResult).get("data");
+        if (cities.isEmpty()) {
+            return; // 跳过
+        }
+        Long cityId = cities.get(0).get("id").asLong();
+
+        String result = mockMvc.perform(signedGet("/api/open/area/counties", Map.of("cityId", cityId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
+
+    @Test
+    void townships_withValidCountyId_shouldReturnTownships() throws Exception {
+        // province → city → county → township
+        String provinceResult = mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andReturn().getResponse().getContentAsString();
+        Long provinceId = objectMapper.readTree(provinceResult).get("data").get(0).get("id").asLong();
+
+        String cityResult = mockMvc.perform(signedGet("/api/open/area/cities", Map.of("provinceId", provinceId)))
+            .andReturn().getResponse().getContentAsString();
+        Long cityId = objectMapper.readTree(cityResult).get("data").get(0).get("id").asLong();
+
+        String countyResult = mockMvc.perform(signedGet("/api/open/area/counties", Map.of("cityId", cityId)))
+            .andReturn().getResponse().getContentAsString();
+        Long countyId = objectMapper.readTree(countyResult).get("data").get(0).get("id").asLong();
+
+        String result = mockMvc.perform(signedGet("/api/open/area/townships", Map.of("countyId", countyId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray())
+            .andReturn().getResponse().getContentAsString();
+
+        JsonNode data = objectMapper.readTree(result).get("data");
+        assertThat(data.size()).isGreaterThan(0);
+    }
+
+    @Test
+    void detail_withValidAreaId_shouldReturnDetail() throws Exception {
+        String provinceResult = mockMvc.perform(signedGet("/api/open/area/provinces", null))
+            .andReturn().getResponse().getContentAsString();
+        Long areaId = objectMapper.readTree(provinceResult).get("data").get(0).get("id").asLong();
+
+        mockMvc.perform(signedGet("/api/open/area/detail", Map.of("areaId", areaId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").exists())
+            .andExpect(jsonPath("$.data.name").isNotEmpty());
+    }
+
+    @Test
+    void tree_shouldReturnTreeStructure() throws Exception {
+        Map<String, Object> params = Map.of("depth", 2);
+        mockMvc.perform(signedGet("/api/open/area/tree", params))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isArray());
+    }
 }
