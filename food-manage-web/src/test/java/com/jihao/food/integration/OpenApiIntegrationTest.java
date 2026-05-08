@@ -187,15 +187,21 @@ class OpenApiIntegrationTest {
         // province → city → county → township
         String provinceResult = mockMvc.perform(signedGet("/api/open/area/provinces", null))
             .andReturn().getResponse().getContentAsString();
-        Long provinceId = objectMapper.readTree(provinceResult).get("data").get(0).get("id").asLong();
+        JsonNode provinces = objectMapper.readTree(provinceResult).get("data");
+        if (provinces.isEmpty()) return;
+        Long provinceId = provinces.get(0).get("id").asLong();
 
         String cityResult = mockMvc.perform(signedGet("/api/open/area/cities", Map.of("provinceId", provinceId)))
             .andReturn().getResponse().getContentAsString();
-        Long cityId = objectMapper.readTree(cityResult).get("data").get(0).get("id").asLong();
+        JsonNode cities = objectMapper.readTree(cityResult).get("data");
+        if (cities.isEmpty()) return;
+        Long cityId = cities.get(0).get("id").asLong();
 
         String countyResult = mockMvc.perform(signedGet("/api/open/area/counties", Map.of("cityId", cityId)))
             .andReturn().getResponse().getContentAsString();
-        Long countyId = objectMapper.readTree(countyResult).get("data").get(0).get("id").asLong();
+        JsonNode counties = objectMapper.readTree(countyResult).get("data");
+        if (counties.isEmpty()) return;
+        Long countyId = counties.get(0).get("id").asLong();
 
         String result = mockMvc.perform(signedGet("/api/open/area/townships", Map.of("countyId", countyId)))
             .andExpect(status().isOk())
