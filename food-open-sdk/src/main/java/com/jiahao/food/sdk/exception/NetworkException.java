@@ -5,6 +5,8 @@ package com.jiahao.food.sdk.exception;
  */
 public class NetworkException extends FoodOpenException {
 
+    private static final long serialVersionUID = 1L;
+
     public NetworkException(String message, Throwable cause) {
         super("NETWORK_ERROR", message, cause);
     }

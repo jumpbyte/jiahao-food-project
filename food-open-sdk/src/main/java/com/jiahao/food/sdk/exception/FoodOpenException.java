@@ -5,6 +5,8 @@ package com.jiahao.food.sdk.exception;
  */
 public abstract class FoodOpenException extends Exception {
 
+    private static final long serialVersionUID = 1L;
+
     private final String errorCode;
     private final String errorMessage;
 
