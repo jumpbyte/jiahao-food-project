@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * SDK HTTP 客户端（连接池）。
  */
-public class SdkHttpClient {
+public class SdkHttpClient implements AutoCloseable {
 
     private final CloseableHttpClient httpClient;
 

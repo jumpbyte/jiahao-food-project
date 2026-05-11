@@ -5,29 +5,34 @@ package com.jiahao.food.sdk.log;
  */
 public class FoodOpenLogger {
 
+    private static final boolean SLF4J_AVAILABLE;
+
+    static {
+        boolean available = false;
+        try {
+            Class.forName("org.slf4j.LoggerFactory");
+            available = true;
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
+        SLF4J_AVAILABLE = available;
+    }
+
     private final boolean enabled;
     private final Object delegate;
-    private final boolean useSlf4j;
 
     public FoodOpenLogger(boolean enabled) {
         this.enabled = enabled;
-        boolean slf4j = false;
-        Object logger = null;
-        try {
-            Class<?> factoryClass = Class.forName("org.slf4j.LoggerFactory");
-            java.lang.reflect.Method method = factoryClass.getMethod("getLogger", String.class);
-            logger = method.invoke(null, "com.jiahao.food.sdk");
-            slf4j = true;
-        } catch (Exception e) {
-            logger = java.util.logging.Logger.getLogger("com.jiahao.food.sdk");
+        if (SLF4J_AVAILABLE) {
+            this.delegate = org.slf4j.LoggerFactory.getLogger("com.jiahao.food.sdk");
+        } else {
+            this.delegate = java.util.logging.Logger.getLogger("com.jiahao.food.sdk");
         }
-        this.delegate = logger;
-        this.useSlf4j = slf4j;
     }
 
     public void info(String msg) {
         if (!enabled) return;
-        if (useSlf4j) {
+        if (SLF4J_AVAILABLE) {
             ((org.slf4j.Logger) delegate).info(msg);
         } else {
             ((java.util.logging.Logger) delegate).info(msg);
@@ -36,7 +41,7 @@ public class FoodOpenLogger {
 
     public void warn(String msg) {
         if (!enabled) return;
-        if (useSlf4j) {
+        if (SLF4J_AVAILABLE) {
             ((org.slf4j.Logger) delegate).warn(msg);
         } else {
             ((java.util.logging.Logger) delegate).warning(msg);
@@ -45,7 +50,7 @@ public class FoodOpenLogger {
 
     public void debug(String msg) {
         if (!enabled) return;
-        if (useSlf4j) {
+        if (SLF4J_AVAILABLE) {
             ((org.slf4j.Logger) delegate).debug(msg);
         } else {
             ((java.util.logging.Logger) delegate).fine(msg);
@@ -54,10 +59,10 @@ public class FoodOpenLogger {
 
     public void error(String msg, Throwable t) {
         if (!enabled) return;
-        if (useSlf4j) {
+        if (SLF4J_AVAILABLE) {
             ((org.slf4j.Logger) delegate).error(msg, t);
         } else {
-            ((java.util.logging.Logger) delegate).severe(msg + " - " + t.getMessage());
+            ((java.util.logging.Logger) delegate).log(java.util.logging.Level.SEVERE, msg, t);
         }
     }
 }
