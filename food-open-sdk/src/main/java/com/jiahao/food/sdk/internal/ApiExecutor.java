@@ -11,6 +11,7 @@ import com.jiahao.food.sdk.http.SdkHttpClient;
 import com.jiahao.food.sdk.log.FoodOpenLogger;
 import com.jiahao.food.sdk.retry.RetryPolicy;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,8 +60,8 @@ public class ApiExecutor {
         HttpResponse response = httpClient.execute(fullUrl, headers);
         logger.debug("Response: " + response.getBody());
 
-        ApiResult<T> result = JsonUtil.fromJson(response.getBody(),
-                new TypeToken<ApiResult<T>>() {}.getType());
+        Type resultType = new ApiResultType(dataType);
+        ApiResult<T> result = JsonUtil.fromJson(response.getBody(), resultType);
 
         if (result.getCode() != 0) {
             throw new ServerException(result.getCode(), result.getMessage());
@@ -100,5 +101,28 @@ public class ApiExecutor {
         public T getData() { return data; }
         public long getTimestamp() { return timestamp; }
         public String getTraceId() { return traceId; }
+    }
+
+    /**
+     * ParameterizedType implementation for ApiResult<T> to avoid type erasure.
+     */
+    private static class ApiResultType implements ParameterizedType {
+        private final Type dataType;
+
+        ApiResultType(Type dataType) {
+            this.dataType = dataType;
+        }
+
+        public Type[] getActualTypeArguments() {
+            return new Type[]{dataType};
+        }
+
+        public Type getRawType() {
+            return ApiResult.class;
+        }
+
+        public Type getOwnerType() {
+            return null;
+        }
     }
 }
