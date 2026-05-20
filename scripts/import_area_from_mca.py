@@ -6,6 +6,7 @@
 目标表: area (jiahao_food_db)
 """
 
+import argparse
 import json
 import random
 import time
@@ -268,3 +269,87 @@ VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())"""
             self.cursor.close()
         if self.conn:
             self.conn.close()
+
+
+def print_summary(records):
+    """打印统计摘要。"""
+    level_counts = {}
+    for r in records:
+        level_counts[r["level"]] = level_counts.get(r["level"], 0) + 1
+    print(f"\n{'='*50}")
+    print(f"统计摘要:")
+    print(f"  总计:   {len(records)}")
+    print(f"  省级:   {level_counts.get(1, 0)}")
+    print(f"  市级:   {level_counts.get(2, 0)}")
+    print(f"  区县级: {level_counts.get(3, 0)}")
+    print(f"  乡镇级: {level_counts.get(4, 0)}")
+    print(f"{'='*50}\n")
+
+
+def extract_codes_by_level(nodes, target_level):
+    """从树形结构中提取指定层级的所有 code。"""
+    codes = []
+
+    def walk(nodelist):
+        for n in nodelist:
+            if n.get("level") == target_level:
+                codes.append(str(n["code"]))
+            for child in n.get("children", []) or []:
+                walk([child])
+
+    walk(nodes)
+    return sorted(set(codes))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="从 MCA API 导入全国行政区划数据到 area 表")
+    parser.add_argument("--host", default="localhost", help="数据库地址 (默认: localhost)")
+    parser.add_argument("--port", type=int, default=3306, help="数据库端口 (默认: 3306)")
+    parser.add_argument("--user", default="root", help="数据库用户 (默认: root)")
+    parser.add_argument("--password", default="", help="数据库密码")
+    parser.add_argument("--db", default="jiahao_food_db", help="数据库名 (默认: jiahao_food_db)")
+    parser.add_argument("--dry-run", action="store_true", help="只打印不写入数据库")
+    args = parser.parse_args()
+
+    client = McaClient()
+
+    # Step 1: 获取省+市（maxLevel=2 从根节点查到市级）
+    print("[1/3] 获取省级和市级数据...")
+    base_tree = client.query(code=None, max_level=2)
+    print(f"  获取到根节点下 {len(base_tree)} 个一级节点")
+
+    # Step 2: 遍历每个市，获取市+县，合并回 base_tree
+    city_codes = extract_codes_by_level(base_tree, target_level=2)
+    print(f"[2/3] 遍历 {len(city_codes)} 个市级，获取区县级数据...")
+    for idx, city_code in enumerate(city_codes, 1):
+        if idx % 10 == 0 or idx == len(city_codes):
+            print(f"  进度: {idx}/{len(city_codes)}")
+        county_data = client.query(code=city_code, max_level=2)
+        merge_tree(base_tree, county_data)
+
+    # Step 3: 遍历每个县，获取县+乡镇，合并回 base_tree
+    county_codes = extract_codes_by_level(base_tree, target_level=3)
+    print(f"[3/3] 遍历 {len(county_codes)} 个县级，获取乡镇级数据...")
+    for idx, county_code in enumerate(county_codes, 1):
+        if idx % 100 == 0 or idx == len(county_codes):
+            print(f"  进度: {idx}/{len(county_codes)}")
+        township_data = client.query(code=county_code, max_level=1)
+        merge_tree(base_tree, township_data)
+
+    # 展平
+    print("\n展平树形结构...")
+    records = flatten_tree(base_tree)
+
+    print_summary(records)
+
+    # 写入数据库
+    with DbWriter(args.host, args.port, args.user, args.password, args.db, args.dry_run) as writer:
+        if not args.dry_run:
+            writer.truncate_area()
+        writer.batch_insert(records)
+
+    print("完成!")
+
+
+if __name__ == "__main__":
+    main()
