@@ -10,6 +10,7 @@ import json
 import random
 import time
 
+import pymysql
 import requests
 
 MCA_BASE_URL = "https://dmfw.mca.gov.cn/9095/xzqh/getList"
@@ -197,3 +198,73 @@ def flatten_tree(nodes, parent_id=0, parent_path="", parent_full_name=""):
             records.extend(child_records)
 
     return records
+
+
+class DbWriter:
+    """数据库连接和批量写入。"""
+
+    VERSION = "mca-official"
+    BATCH_SIZE = 1000
+    INSERT_SQL = """INSERT INTO `area` (`id`, `pid`, `level`, `name`, `short_name`, `full_name`, `pin_yin`, `adcode`, `zip_code`, `lng`, `lat`, `path`, `version`, `state`, `create_time`, `update_time`)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())"""
+
+    def __init__(self, host, port, user, password, db, dry_run=False):
+        self.dry_run = dry_run
+        if not dry_run:
+            self.conn = pymysql.connect(
+                host=host, port=port, user=user, password=password,
+                database=db, charset="utf8mb4", autocommit=False
+            )
+            self.cursor = self.conn.cursor()
+        else:
+            self.conn = None
+            self.cursor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type and self.conn:
+            self.conn.rollback()
+        self.close()
+        return False
+
+    def truncate_area(self):
+        if self.dry_run:
+            print("[dry-run] TRUNCATE TABLE `area`;")
+            return
+        print("清空 area 表...")
+        self.cursor.execute("TRUNCATE TABLE `area`")
+        self.conn.commit()
+
+    def batch_insert(self, records):
+        """批量插入 records，每 BATCH_SIZE 条 commit 一次。"""
+        total = len(records)
+        inserted = 0
+
+        for i in range(0, total, self.BATCH_SIZE):
+            batch = records[i:i + self.BATCH_SIZE]
+            values = []
+            for rec in batch:
+                values.append((
+                    rec["id"], rec["pid"], rec["level"], rec["name"],
+                    rec["short_name"], rec["full_name"], "", rec["adcode"],
+                    "", 0, 0, rec["path"], self.VERSION, 1,
+                ))
+
+            if self.dry_run:
+                print(f"[dry-run] INSERT {len(values)} records (batch starting at id={batch[0]['id']})")
+            else:
+                self.cursor.executemany(self.INSERT_SQL, values)
+                self.conn.commit()
+
+            inserted += len(values)
+            print(f"  已写入 {inserted}/{total} 条")
+
+        print(f"写入完成: {inserted} 条")
+
+    def close(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.conn:
+            self.conn.close()
