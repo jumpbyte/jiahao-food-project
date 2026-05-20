@@ -51,9 +51,13 @@ class McaClient:
                 resp = self.session.get(MCA_BASE_URL, params=params, timeout=30)
                 resp.raise_for_status()
                 result = resp.json()
-                if result.get("status") != 0:
+                status = result.get("status")
+                if status not in (0, 200, "200"):
                     raise ValueError(f"MCA API error: {result.get('message', 'unknown')}")
-                return result["data"]
+                data = result["data"]
+                if isinstance(data, dict):
+                    return [data]
+                return data
             except (requests.RequestException, ValueError, json.JSONDecodeError) as e:
                 if attempt == MAX_RETRIES:
                     raise RuntimeError(f"MCA query failed after {MAX_RETRIES} retries: {e}") from e

@@ -157,6 +157,7 @@ public class OrganizationService {
         return new OrganizationDTO(
                 org.getId(),
                 org.getName(),
+                org.getCode(),
                 org.getType(),
                 org.getState(),
                 org.getCreateTime() != null ? org.getCreateTime().toString() : null
@@ -164,7 +165,15 @@ public class OrganizationService {
     }
 
     private OrganizationTreeDTO toTreeDTO(Organization org) {
-        return new OrganizationTreeDTO(org.getId(), org.getParentId(), org.getName(), org.getType(), org.getState(), new ArrayList<>());
+        return new OrganizationTreeDTO(
+                org.getId(),
+                org.getParentId(),
+                org.getName(),
+                org.getCode(),
+                org.getType(),
+                org.getState(),
+                new ArrayList<>()
+        );
     }
 
     private void validateNameUnique(Organization org) {

@@ -16,6 +16,8 @@ public class Organization {
 
     private String name;
 
+    private String code;
+
     /** 组织类型: 1-大区 2-办事处 3-片区 */
     private Integer type;
 

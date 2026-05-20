@@ -21,6 +21,7 @@
 
     <el-table v-loading="loading" :data="districtList">
       <el-table-column label="ID" align="center" prop="id" width="80" />
+      <el-table-column label="编码" align="center" prop="code" width="120" :show-overflow-tooltip="true" />
       <el-table-column label="片区名称" align="center" prop="name" :show-overflow-tooltip="true" />
       <el-table-column label="所属办事处" align="center" prop="officeName" :show-overflow-tooltip="true" />
       <el-table-column label="所属大区" align="center" prop="regionName" :show-overflow-tooltip="true" />
@@ -53,6 +54,9 @@
         </el-form-item>
         <el-form-item label="片区名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入片区名称" />
+        </el-form-item>
+        <el-form-item label="编码" prop="code">
+          <el-input v-model="form.code" placeholder="请输入组织编码" />
         </el-form-item>
         <el-form-item label="绑定街道" prop="streetIds" v-if="!form.id">
           <el-cascader

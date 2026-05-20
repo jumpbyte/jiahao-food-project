@@ -18,6 +18,8 @@ public class OrganizationTreeDTO {
 
     private String name;
 
+    private String code;
+
     private Integer type;
 
     private Integer state;

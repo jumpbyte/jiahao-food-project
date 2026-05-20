@@ -45,6 +45,7 @@ DROP TABLE IF EXISTS `organization`;
 CREATE TABLE `organization` (
   `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
   `name` varchar(50) NOT NULL DEFAULT '' COMMENT '组织名称',
+  `code` varchar(50) NOT NULL DEFAULT '' COMMENT '组织编码（外部系统导入）',
   `type` tinyint(2) NOT NULL DEFAULT 0 COMMENT '组织类型 1-大区 2-办事处 3-片区',
   `parent_id` int(10) NOT NULL DEFAULT 0 COMMENT '父级组织 ID',
   `level` int(5) NOT NULL DEFAULT 0 COMMENT '层级',
