@@ -136,6 +136,65 @@ def derive_level(code, name: str, sheet_name: str) -> int:
     return 4 if sheet_name == "乡镇街道" else 3
 
 
+def get_ancestry_codes(code_str: str) -> list:
+    """按层级从细到粗返回所有祖先code（不含自身）。"""
+    code_str = str(code_str)
+    if len(code_str) == 6:
+        return [code_str[:2] + "0000"]
+    elif len(code_str) == 9:
+        return [code_str[:2] + "0000", code_str[:4] + "00", code_str[:6]]
+    return []
+
+
+def fix_parent_reference(code_str: str, level: int, all_ids: set) -> tuple:
+    """修复不存在的pid：向上追溯直到找到存在的祖先。
+
+    返回 (corrected_pid, corrected_path)。
+    path 仅包含实际存在的祖先code + 自身code。
+    """
+    ancestry = get_ancestry_codes(code_str)
+    # 从最近的祖先开始查找（倒序：最细粒度优先）
+    for ancestor in reversed(ancestry):
+        if int(ancestor) in all_ids:
+            # 构建path：从最粗到最细，只包含存在的祖先
+            path_parts = []
+            for a in ancestry:
+                if int(a) in all_ids:
+                    path_parts.append(a)
+            path_parts.append(code_str)
+            return int(ancestor), "/".join(path_parts)
+    return 0, code_str
+
+
+def fix_orphan_parents(records: list) -> int:
+    """修复pid指向不存在记录的孤儿记录，并同步修正子孙记录的path。
+
+    返回修复数量。
+    """
+    all_ids = {r["id"] for r in records}
+    rec_by_id = {r["id"]: r for r in records}
+    fixed = 0
+
+    # 第一遍：修复所有pid不存在的记录
+    for rec in records:
+        if rec["pid"] != 0 and rec["pid"] not in all_ids:
+            code_str = str(rec["adcode"])
+            new_pid, new_path = fix_parent_reference(code_str, rec["level"], all_ids)
+            rec["pid"] = new_pid
+            rec["path"] = new_path
+            fixed += 1
+
+    # 第二遍：重新计算所有非顶级记录的path，确保path只包含存在的祖先
+    for rec in records:
+        if rec["level"] == 1:
+            continue
+        parent = rec_by_id.get(rec["pid"])
+        if parent:
+            rec["path"] = parent["path"] + "/" + str(rec["adcode"])
+
+    return fixed
+
+
 def parse_excel_row(code, name: str, sheet_name: str):
     """解析Excel一行数据，返回area记录或None。
 
@@ -271,6 +330,11 @@ def main():
     wb.close()
 
     records.sort(key=lambda r: r["id"])
+
+    # 修复pid指向不存在记录的孤儿（如省直辖县级市、开发区等）
+    fixed_count = fix_orphan_parents(records)
+    if fixed_count:
+        print(f"修复孤儿记录（pid不存在）: {fixed_count} 条")
 
     print(f"\n总记录数: {len(records)}")
 
