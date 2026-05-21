@@ -8,6 +8,7 @@
 
 import argparse
 import json
+import os
 import random
 import time
 
@@ -15,9 +16,10 @@ import pymysql
 import requests
 
 MCA_BASE_URL = "https://dmfw.mca.gov.cn/9095/xzqh/getList"
-REQUEST_DELAY = 0.1       # 基础间隔 (秒)
-REQUEST_JITTER = 0.05     # 随机抖动 (秒)
+REQUEST_DELAY = 3.0       # 基础间隔 (秒)
+REQUEST_JITTER = 1.0      # 随机抖动 (秒)
 MAX_RETRIES = 3           # 失败重试次数
+RATE_LIMIT_MESSAGE = "接口调用过于频繁"  # MCA API 频率限制提示
 
 
 class McaClient:
@@ -61,7 +63,12 @@ class McaClient:
             except (requests.RequestException, ValueError, json.JSONDecodeError) as e:
                 if attempt == MAX_RETRIES:
                     raise RuntimeError(f"MCA query failed after {MAX_RETRIES} retries: {e}") from e
-                wait = 2 ** attempt
+                # 检测到频率限制，等待更长时间
+                error_msg = str(e)
+                if RATE_LIMIT_MESSAGE in error_msg:
+                    wait = 5 * attempt
+                else:
+                    wait = 2 ** attempt
                 print(f"  [重试 {attempt}/{MAX_RETRIES}] {e}，{wait}s 后重试...")
                 time.sleep(wait)
 
@@ -205,6 +212,50 @@ def flatten_tree(nodes, parent_id=0, parent_path="", parent_full_name=""):
     return records
 
 
+PROGRESS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".import_progress.json")
+
+
+class ProgressTracker:
+    """管理导入进度的读取、写入和删除，支持断点续传。"""
+
+    def __init__(self):
+        self.completed_cities = set()
+        self.completed_counties = set()
+        self._load()
+
+    def _load(self):
+        if os.path.exists(PROGRESS_FILE):
+            try:
+                with open(PROGRESS_FILE, "r") as f:
+                    data = json.load(f)
+                self.completed_cities = set(data.get("completed_cities", []))
+                self.completed_counties = set(data.get("completed_counties", []))
+                print(f"加载进度: 已完成 {len(self.completed_cities)} 个市级, {len(self.completed_counties)} 个县级")
+            except (json.JSONDecodeError, IOError):
+                print("进度文件损坏，从头开始")
+
+    def _save(self):
+        data = {
+            "completed_cities": sorted(self.completed_cities),
+            "completed_counties": sorted(self.completed_counties),
+        }
+        with open(PROGRESS_FILE, "w") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def mark_city_done(self, city_code: str):
+        self.completed_cities.add(city_code)
+        self._save()
+
+    def mark_county_done(self, county_code: str):
+        self.completed_counties.add(county_code)
+        self._save()
+
+    def cleanup(self):
+        if os.path.exists(PROGRESS_FILE):
+            os.remove(PROGRESS_FILE)
+            print("导入完成，清除进度文件")
+
+
 class DbWriter:
     """数据库连接和批量写入。"""
 
@@ -313,9 +364,19 @@ def main():
     parser.add_argument("--password", default="", help="数据库密码")
     parser.add_argument("--db", default="jiahao_food_db", help="数据库名 (默认: jiahao_food_db)")
     parser.add_argument("--dry-run", action="store_true", help="只打印不写入数据库")
+    parser.add_argument("--fresh", action="store_true", help="忽略已有进度，从头开始")
     args = parser.parse_args()
 
     client = McaClient()
+
+    # 进度追踪
+    if args.fresh:
+        progress = ProgressTracker()
+        progress.cleanup()
+        progress = ProgressTracker()
+        print("从头开始导入...")
+    else:
+        progress = ProgressTracker()
 
     # Step 1: 获取省+市（maxLevel=2 从根节点查到市级）
     print("[1/3] 获取省级和市级数据...")
@@ -324,21 +385,33 @@ def main():
 
     # Step 2: 遍历每个市，获取市+县，合并回 base_tree
     city_codes = extract_codes_by_level(base_tree, target_level=2)
-    print(f"[2/3] 遍历 {len(city_codes)} 个市级，获取区县级数据...")
-    for idx, city_code in enumerate(city_codes, 1):
-        if idx % 10 == 0 or idx == len(city_codes):
-            print(f"  进度: {idx}/{len(city_codes)}")
+    remaining_cities = [c for c in city_codes if c not in progress.completed_cities]
+    skipped = len(city_codes) - len(remaining_cities)
+    if skipped > 0:
+        print(f"  跳过 {skipped} 个已完成的市级")
+
+    print(f"[2/3] 遍历 {len(remaining_cities)} 个市级，获取区县级数据...")
+    for idx, city_code in enumerate(remaining_cities, 1):
+        if idx % 10 == 0 or idx == len(remaining_cities):
+            print(f"  进度: {idx}/{len(remaining_cities)}")
         county_data = client.query(code=city_code, max_level=2)
         merge_tree(base_tree, county_data)
+        progress.mark_city_done(city_code)
 
     # Step 3: 遍历每个县，获取县+乡镇，合并回 base_tree
     county_codes = extract_codes_by_level(base_tree, target_level=3)
-    print(f"[3/3] 遍历 {len(county_codes)} 个县级，获取乡镇级数据...")
-    for idx, county_code in enumerate(county_codes, 1):
-        if idx % 100 == 0 or idx == len(county_codes):
-            print(f"  进度: {idx}/{len(county_codes)}")
+    remaining_counties = [c for c in county_codes if c not in progress.completed_counties]
+    skipped = len(county_codes) - len(remaining_counties)
+    if skipped > 0:
+        print(f"  跳过 {skipped} 个已完成的县级")
+
+    print(f"[3/3] 遍历 {len(remaining_counties)} 个县级，获取乡镇级数据...")
+    for idx, county_code in enumerate(remaining_counties, 1):
+        if idx % 100 == 0 or idx == len(remaining_counties):
+            print(f"  进度: {idx}/{len(remaining_counties)}")
         township_data = client.query(code=county_code, max_level=1)
         merge_tree(base_tree, township_data)
+        progress.mark_county_done(county_code)
 
     # 展平
     print("\n展平树形结构...")
@@ -352,6 +425,8 @@ def main():
             writer.truncate_area()
         writer.batch_insert(records)
 
+    # 清除进度文件
+    progress.cleanup()
     print("完成!")
 
 
