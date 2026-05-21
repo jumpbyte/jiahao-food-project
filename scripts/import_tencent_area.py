@@ -26,7 +26,6 @@ OUTPUT_SQL = os.path.join(
 )
 BATCH_SIZE = 500
 VERSION = "tencent-map-20260427"
-TIMESTAMP = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 # 行政后缀映射（按长度降序，优先匹配长后缀）
 SUFFIX_MAP = {
@@ -174,12 +173,12 @@ def parse_excel_row(code, name: str, sheet_name: str):
 
 
 # ─── SQL生成 ──────────────────────────────────────────────
-def generate_sql(records: list, output_path: str):
+def generate_sql(records: list, output_path: str, timestamp: str):
     """生成批量INSERT SQL文件。"""
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("-- 中国行政区数据自动导入（腾讯地图数据源）\n")
         f.write(f"-- 数据来源: 腾讯地图行政区划编码表\n")
-        f.write(f"-- 生成时间: {TIMESTAMP}\n")
+        f.write(f"-- 生成时间: {timestamp}\n")
         f.write(f"-- 总记录数: {len(records)}\n\n")
         f.write("SET NAMES utf8mb4;\n")
         f.write("SET FOREIGN_KEY_CHECKS = 0;\n\n")
@@ -220,8 +219,8 @@ def generate_sql(records: list, output_path: str):
                     f"'{rec['path']}'",
                     f"'{VERSION}'",
                     "1",
-                    f"'{TIMESTAMP}'",
-                    f"'{TIMESTAMP}'",
+                    f"'{timestamp}'",
+                    f"'{timestamp}'",
                 ]
                 line = "  (" + ", ".join(values) + ")"
                 if j < len(batch) - 1:
@@ -245,6 +244,7 @@ def main():
     print(f"读取Excel: {excel_path}")
     wb = openpyxl.load_workbook(excel_path, read_only=True, data_only=True)
 
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     records = []
     for sheet_name in ["省市区", "乡镇街道"]:
         if sheet_name not in wb.sheetnames:
@@ -257,7 +257,11 @@ def main():
             if count == 0:
                 count += 1
                 continue
+            if not row or len(row) < 2:
+                continue
             code, name = row
+            if code is None or name is None:
+                continue
             rec = parse_excel_row(code, name, sheet_name)
             if rec:
                 records.append(rec)
@@ -278,7 +282,7 @@ def main():
         print(f"  {names.get(lv, f'{lv}级')}: {level_counts[lv]}")
 
     print(f"\n生成SQL文件: {output_path}")
-    generate_sql(records, output_path)
+    generate_sql(records, output_path, timestamp)
     print(f"文件大小: {os.path.getsize(output_path) / 1024 / 1024:.1f} MB")
     print("完成!")
 
