@@ -149,7 +149,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="层级">
-              <el-tag>{{ form.pid ? levelLabel(getLevelByPid(form.pid)) : '-' }}</el-tag>
+              <el-tag>{{ form.level ? levelLabel(form.level) : (form.pid ? levelLabel(getLevelByPid(form.pid)) : '-') }}</el-tag>
             </el-form-item>
           </el-col>
         </el-row>

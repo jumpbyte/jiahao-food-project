@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **不涉及铭感的操作操作就不用再询问用户，直接执行** — 不要提确认问题，不要问"是否继续"，直接做
 - **语言**：使用中文回复
+- git提交要使用中文说明
 
 ## 项目概览
 
