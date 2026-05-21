@@ -70,6 +70,9 @@ def derive_pid(code_str: str, level: int) -> int:
     elif level == 2:
         return int(code_str[:2] + "0000")
     elif level == 3:
+        # 港澳区县：code格式为81XXXX/82XXXX，父级为省级(810000/820000)
+        if code_str[:2] in ("81", "82"):
+            return int(code_str[:2] + "0000")
         return int(code_str[:4] + "00")
     elif level == 4:
         return int(code_str[:6])
@@ -84,6 +87,11 @@ def build_path(code_str: str, level: int) -> str:
         parent = code_str[:2] + "0000"
         return f"{parent}/{code_str}"
     elif level == 3:
+        # 港澳区县：省级 → 区级
+        if code_str[:2] in ("81", "82"):
+            gp = code_str[:2] + "0000"
+            return f"{gp}/{code_str}"
+        # 普通区县：省级 → 市级 → 区县级
         grandparent = code_str[:2] + "0000"
         parent = code_str[:4] + "00"
         return f"{grandparent}/{parent}/{code_str}"
@@ -95,16 +103,56 @@ def build_path(code_str: str, level: int) -> str:
     return code_str
 
 
-def parse_excel_row(code, name: str):
-    """解析Excel一行数据，返回area记录或None。"""
+# 直辖/特区前缀（北京11、天津12、上海31、重庆50、香港81、澳门82）
+MUNICIPALITY_PREFIXES = {"11", "12", "31", "50", "81", "82"}
+
+
+def derive_level(code, name: str, sheet_name: str) -> int:
+    """根据code长度和name段数推导层级。
+
+    6位代码:
+      - XX0000（真正的省级code）+ parts=1 → 1级（省级）
+      - XX0100等（直辖市市级）+ parts=1 → 2级（直辖市本级）
+      - 直辖市下 + parts=2 → 3级（直辖市区县）
+      - 普通省下 + parts=2 → 2级（地级市）
+      - parts=3 → 3级（普通省下的区县）
+    9位代码:
+      - 来自"乡镇街道"sheet → 4级（全部是乡镇/街道）
+      - 来自"省市区"sheet → 3级（区县级）
+    """
     code_str = str(code)
     parts = [p for p in name.split(",") if p and p != "中国"]
-    level = len(parts)
+    n_parts = len(parts)
+    is_municipality = code_str[:2] in MUNICIPALITY_PREFIXES
+
+    if len(code_str) == 6:
+        if n_parts == 1:
+            is_province_code = code_str[2:6] == "0000"
+            return 1 if is_province_code else 2
+        elif n_parts == 2:
+            return 3 if is_municipality else 2
+        else:
+            return 3
+    # 9位代码
+    return 4 if sheet_name == "乡镇街道" else 3
+
+
+def parse_excel_row(code, name: str, sheet_name: str):
+    """解析Excel一行数据，返回area记录或None。
+
+    Args:
+        code: Excel的code（int）
+        name: 逗号分隔的全路径，如 "中国,,北京市,东城区,东华门街道"
+        sheet_name: 来源sheet（"省市区"或"乡镇街道"）
+    """
+    code_str = str(code)
+    parts = [p for p in name.split(",") if p and p != "中国"]
+    level = derive_level(code, name, sheet_name)
 
     if level < 1 or level > 4:
         return None
 
-    area_name = parts[-1]
+    area_name = parts[-1] if parts else ""
     short_name = derive_short_name(area_name, level)
     full_name = "".join(parts)
     pin_yin = derive_pin_yin(short_name)
@@ -210,7 +258,7 @@ def main():
                 count += 1
                 continue
             code, name = row
-            rec = parse_excel_row(code, name)
+            rec = parse_excel_row(code, name, sheet_name)
             if rec:
                 records.append(rec)
                 sheet_count += 1
