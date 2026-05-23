@@ -127,10 +127,19 @@ public class AreaRelationService {
     @CacheEvict(value = "selectableAreaTree", allEntries = true)
     @Transactional
     public int bindStreets(Long orgId, List<Long> streetIds) {
+        Set<Long> newStreetIds = streetIds != null ? new HashSet<>(streetIds) : Collections.emptySet();
+
+        // 1. 查出该组织当前已绑定的街道
+        List<AreaRelation> existingRelations = areaRelationMapper.selectByOrgId(orgId);
+        Set<Long> existingStreetIds = existingRelations.stream()
+                .map(AreaRelation::getAreaId)
+                .collect(Collectors.toSet());
+
         int count = 0;
-        for (Long streetId : streetIds) {
-            AreaRelation existing = areaRelationMapper.selectByAreaIdAndOrgId(streetId, orgId);
-            if (existing == null) {
+
+        // 2. 新增：传入但未绑定的街道
+        for (Long streetId : newStreetIds) {
+            if (!existingStreetIds.contains(streetId)) {
                 AreaRelation relation = new AreaRelation();
                 relation.setAreaId(streetId);
                 relation.setOrgId(orgId);
@@ -139,6 +148,16 @@ public class AreaRelationService {
                 count++;
             }
         }
+
+        // 3. 删除：已绑定但本次未传入的街道（软删除）
+        for (AreaRelation rel : existingRelations) {
+            if (!newStreetIds.contains(rel.getAreaId())) {
+                rel.setDelFlag(1);
+                areaRelationMapper.updateById(rel);
+                count++;
+            }
+        }
+
         return count;
     }
 

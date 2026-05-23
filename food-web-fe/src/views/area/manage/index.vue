@@ -1,11 +1,5 @@
 <template>
   <div class="app-container">
-    <!-- 顶部操作栏 -->
-    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px;">
-      <el-button type="primary" icon="Plus" @click="handleAdd">新增</el-button>
-      <el-button type="warning" icon="Upload" @click="handleImport">导入</el-button>
-    </div>
-
     <el-row :gutter="16">
       <!-- 左侧：行政区树 -->
       <el-col :span="7">
@@ -29,9 +23,6 @@
             <template #default="{ node, data }">
               <span class="custom-tree-node">
                 <span class="node-label">
-                  <el-tag v-if="data.level === 1" size="small" type="success">省</el-tag>
-                  <el-tag v-else-if="data.level === 2" size="small">市</el-tag>
-                  <el-tag v-else-if="data.level === 3" size="small" type="warning">县</el-tag>
                   {{ node.label }}
                 </span>
                 <el-button
@@ -39,7 +30,7 @@
                   type="primary"
                   size="small"
                   @click.stop="handleAddChild(data)"
-                  v-if="data.level < 3"
+                  v-if="data.level < 4"
                   class="add-child-btn"
                 >
                   <el-icon><Plus /></el-icon>
@@ -272,7 +263,7 @@ function loadNode(node, resolve) {
   } else {
     const parentId = node.data.id
     const level = node.data.level + 1
-    if (level > 3) {
+    if (level > 4) {
       resolve([])
       return
     }
