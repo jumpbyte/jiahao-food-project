@@ -482,7 +482,15 @@ async function loadFormStreetTree(editOrgId, parentNode) {
       res = await apis.getSelectableTree(editOrgId)
     } else if (parentNode) {
       // 新建子级：传父组织 ID
-      res = await apis.getSelectableTree(parentNode.id)
+      if (formType.value === 2) {
+        // 新增办事处：传 parentOrgId 限制在大区管辖范围内
+        res = await apis.getSelectableTree(parentNode.id, parentNode.id)
+      } else if (formType.value === 3) {
+        // 新增片区：传 parentOrgId 限制在办事处管辖范围内
+        res = await apis.getSelectableTree(parentNode.id, parentNode.id)
+      } else {
+        res = await apis.getSelectableTree(parentNode.id)
+      }
     }
     const raw = res.data || res || []
     streetTreeData.value = raw

@@ -88,9 +88,13 @@ public class OfficeController {
     }
 
     @GetMapping("/selectable-area-tree")
-    public Result<List<AreaRelationService.AreaTreeNode>> selectableAreaTree(@RequestParam Long orgId) {
-        Organization office = organizationService.getById(orgId);
-        Long parentOrgId = office != null ? office.getParentId() : null;
+    public Result<List<AreaRelationService.AreaTreeNode>> selectableAreaTree(
+            @RequestParam Long orgId,
+            @RequestParam(required = false) Long parentOrgId) {
+        if (parentOrgId == null) {
+            Organization office = organizationService.getById(orgId);
+            parentOrgId = office != null ? office.getParentId() : null;
+        }
         return Result.success(areaRelationService.getSelectableAreaTree(orgId, parentOrgId));
     }
 

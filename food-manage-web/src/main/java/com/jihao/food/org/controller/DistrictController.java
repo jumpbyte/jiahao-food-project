@@ -75,9 +75,13 @@ public class DistrictController {
     }
 
     @GetMapping("/selectable-area-tree")
-    public Result<List<AreaRelationService.AreaTreeNode>> selectableAreaTree(@RequestParam Long orgId) {
-        Organization district = organizationService.getById(orgId);
-        Long parentOrgId = district != null ? district.getParentId() : null;
+    public Result<List<AreaRelationService.AreaTreeNode>> selectableAreaTree(
+            @RequestParam Long orgId,
+            @RequestParam(required = false) Long parentOrgId) {
+        if (parentOrgId == null) {
+            Organization district = organizationService.getById(orgId);
+            parentOrgId = district != null ? district.getParentId() : null;
+        }
         return Result.success(areaRelationService.getSelectableAreaTree(orgId, parentOrgId));
     }
 

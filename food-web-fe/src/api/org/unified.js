@@ -21,7 +21,10 @@ export function updateOffice(data) { return request({ url: '/api/admin/office/up
 export function deleteOffice(id) { return request({ url: '/api/admin/office/delete', method: 'post', params: { id } }) }
 export function bindOfficeStreets(data) { return request({ url: '/api/admin/office/bind-streets', method: 'post', data }) }
 export function getOfficeStreets(orgId) { return request({ url: '/api/admin/office/streets', method: 'get', params: { orgId } }) }
-export function getOfficeSelectableAreaTree(orgId) { return request({ url: '/api/admin/office/selectable-area-tree', method: 'get', params: { orgId } }) }
+export function getOfficeSelectableAreaTree(orgId, parentOrgId) {
+  const params = parentOrgId != null ? { orgId, parentOrgId } : { orgId }
+  return request({ url: '/api/admin/office/selectable-area-tree', method: 'get', params })
+}
 
 // ===== 片区 =====
 export function listDistrict(params) { return request({ url: '/api/admin/district/list', method: 'get', params }) }
@@ -30,7 +33,10 @@ export function updateDistrict(data) { return request({ url: '/api/admin/distric
 export function deleteDistrict(id) { return request({ url: '/api/admin/district/delete', method: 'post', params: { id } }) }
 export function bindDistrictStreets(data) { return request({ url: '/api/admin/district/bind-streets', method: 'post', data }) }
 export function getDistrictStreets(areaId) { return request({ url: '/api/admin/district/streets', method: 'get', params: { areaId } }) }
-export function getDistrictSelectableAreaTree(orgId) { return request({ url: '/api/admin/district/selectable-area-tree', method: 'get', params: { orgId } }) }
+export function getDistrictSelectableAreaTree(orgId, parentOrgId) {
+  const params = parentOrgId != null ? { orgId, parentOrgId } : { orgId }
+  return request({ url: '/api/admin/district/selectable-area-tree', method: 'get', params })
+}
 export function getDistrictParent(areaId) { return request({ url: '/api/admin/district/parent', method: 'get', params: { areaId } }) }
 
 // ===== 工具函数 =====
